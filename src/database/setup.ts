@@ -81,6 +81,31 @@ const initializeDatabase = async (): Promise<Database> => {
     }
   }
 
+  // Opret projects tabel med korrekte kolonne-navne
+  await exec(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      print_time INTEGER NOT NULL,
+      post_processing_time INTEGER NOT NULL,
+      extra_costs REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Opret project_filaments tabel for at håndtere mange-til-mange relation
+  await exec(`
+    CREATE TABLE IF NOT EXISTS project_filaments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      filament_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
+      FOREIGN KEY (filament_id) REFERENCES filaments (id) ON DELETE CASCADE
+    );
+  `);
+
   return { run, get, all, exec }
 }
 

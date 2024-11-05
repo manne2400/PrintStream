@@ -20,7 +20,6 @@ const Header: React.FC = () => {
     return path.charAt(0).toUpperCase() + path.slice(1);
   };
 
-  // Fjern duplikerede notifikationer
   const uniqueNotifications = useMemo(() => {
     const seen = new Set();
     return notifications.filter(notification => {
@@ -33,7 +32,7 @@ const Header: React.FC = () => {
   return (
     <Box 
       as="header"
-      bg="white" 
+      bg="gray.50" 
       borderBottom="1px" 
       borderColor={borderColor}
       h="16"

@@ -10,7 +10,7 @@ import {
   Table, Thead, Tbody, Tr, Th, Td,
   useToast, Editable, EditableInput, EditablePreview, useEditableControls, IconButton, InputGroup, InputLeftElement
 } from '@chakra-ui/react';
-import { PlusIcon, PencilIcon, DocumentDuplicateIcon, TrashIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, DocumentDuplicateIcon, TrashIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { FilamentOperations, Filament as FilamentType } from '../database/operations';
 import { useNotifications } from '../context/NotificationContext';
@@ -45,15 +45,25 @@ const AmsSlotCell: React.FC<AmsSlotCellProps> = ({ value, row, onSave }) => {
         await onSave(row.original.id, { 
           ams_slot: e.target.value === "none" ? null : Number(e.target.value) 
         });
-      } catch (err) {
-        // Vis fejlbesked hvis AMS slot er optaget
-        toast({
-          title: 'Error',
-          description: err.message,
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
+      } catch (err: any) {
+        // Tjek om fejlen er relateret til AMS slot
+        if (err.message && err.message.includes('AMS slot')) {
+          toast({
+            title: 'AMS Slot in use',
+            description: err.message,
+            status: 'warning',
+            duration: 5000,
+            isClosable: true,
+          });
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Failed to update filament',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
       }
     }
   };
@@ -147,18 +157,26 @@ const CopyFilamentModal: React.FC<CopyModalProps> = ({ isOpen, onClose, filament
 
             <FormControl isRequired>
               <FormLabel>Price per kg (DKK)</FormLabel>
-              <NumberInput
-                value={copyData.pricePerKg}
-                onChange={(value) => setCopyData(prev => ({ ...prev, pricePerKg: parseFloat(value) }))}
-                min={0}
-                precision={2}
+              <Editable
+                placeholder="0,00"
+                defaultValue={copyData.pricePerKg.toFixed(2).replace('.', ',')}
+                onChange={(value) => {
+                  const cleanValue = value.replace(/[^\d,.]/g, '').replace(/,/g, '.');
+                  const parts = cleanValue.split('.');
+                  const finalValue = parts.length > 1 
+                    ? `${parts[0]}.${parts[1].slice(0, 2)}`
+                    : cleanValue;
+                  
+                  const numericValue = parseFloat(finalValue);
+                  if (!isNaN(numericValue)) {
+                    setCopyData(prev => ({ ...prev, pricePerKg: numericValue }));
+                  }
+                }}
+                startWithEditView
               >
-                <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
+                <EditablePreview />
+                <EditableInput />
+              </Editable>
             </FormControl>
 
             <FormControl isRequired>
@@ -260,6 +278,250 @@ interface SortConfig {
   direction: 'asc' | 'desc';
 }
 
+// Tilføj EditFilamentModal komponent
+interface EditModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  filamentData: FilamentType;
+  onSubmit: (id: number, data: Partial<FilamentType>) => void;
+}
+
+const EditFilamentModal: React.FC<EditModalProps> = ({ isOpen, onClose, filamentData, onSubmit }) => {
+  const [editData, setEditData] = useState<FilamentFormData>({
+    name: filamentData.name,
+    type: filamentData.type,
+    color: filamentData.color,
+    pricePerKg: filamentData.price,
+    weight: filamentData.weight,
+    useAms: filamentData.ams_slot !== null,
+    amsSlot: filamentData.ams_slot ?? null,
+    lowStockAlert: filamentData.low_stock_alert ?? 500,
+  });
+
+  const handleSubmit = () => {
+    onSubmit(filamentData.id!, {
+      name: editData.name,
+      type: editData.type,
+      color: editData.color,
+      price: editData.pricePerKg,
+      ams_slot: editData.useAms ? editData.amsSlot : null,
+      low_stock_alert: editData.lowStockAlert,
+    });
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Edit Filament</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack spacing={4}>
+            <FormControl isRequired>
+              <FormLabel>Name</FormLabel>
+              <Input
+                value={editData.name}
+                onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Type</FormLabel>
+              <Select
+                value={editData.type}
+                onChange={(e) => setEditData(prev => ({ ...prev, type: e.target.value }))}
+              >
+                {FilamentTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Color</FormLabel>
+              <Input
+                value={editData.color}
+                onChange={(e) => setEditData(prev => ({ ...prev, color: e.target.value }))}
+              />
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Price per kg (DKK)</FormLabel>
+              <Editable
+                placeholder="0,00"
+                defaultValue={editData.pricePerKg.toFixed(2).replace('.', ',')}
+                onChange={(value) => {
+                  const cleanValue = value.replace(/[^\d,.]/g, '').replace(/,/g, '.');
+                  const parts = cleanValue.split('.');
+                  const finalValue = parts.length > 1 
+                    ? `${parts[0]}.${parts[1].slice(0, 2)}`
+                    : cleanValue;
+                  
+                  const numericValue = parseFloat(finalValue);
+                  if (!isNaN(numericValue)) {
+                    setEditData(prev => ({ ...prev, pricePerKg: numericValue }));
+                  }
+                }}
+                startWithEditView
+              >
+                <EditablePreview />
+                <EditableInput />
+              </Editable>
+            </FormControl>
+
+            <FormControl display="flex" alignItems="center">
+              <FormLabel mb="0">Use AMS</FormLabel>
+              <Switch
+                isChecked={editData.useAms}
+                onChange={(e) => {
+                  setEditData(prev => ({
+                    ...prev,
+                    useAms: e.target.checked,
+                    amsSlot: e.target.checked ? prev.amsSlot || 1 : null
+                  }));
+                }}
+              />
+            </FormControl>
+
+            {editData.useAms && (
+              <FormControl isRequired>
+                <FormLabel>AMS Slot</FormLabel>
+                <NumberInput
+                  value={editData.amsSlot || 1}
+                  onChange={(value) => setEditData(prev => ({ ...prev, amsSlot: parseInt(value) }))}
+                  min={1}
+                  max={16}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+            )}
+
+            <FormControl>
+              <FormLabel>Low Stock Alert (g)</FormLabel>
+              <NumberInput
+                value={editData.lowStockAlert}
+                onChange={(value) => setEditData(prev => ({ ...prev, lowStockAlert: parseInt(value) }))}
+                min={0}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+              <Text fontSize="sm" color="gray.500" mt={1}>
+                You will be notified when stock falls below this amount
+              </Text>
+            </FormControl>
+          </VStack>
+        </ModalBody>
+
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button colorScheme="blue" onClick={handleSubmit}>
+            Save Changes
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+// Tilføj AddStockModal komponent
+interface AddStockModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  filament: FilamentType;
+  onSubmit: (id: number, newStock: number) => void;
+}
+
+const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, filament, onSubmit }) => {
+  const [additionalStock, setAdditionalStock] = useState<number>(0);
+
+  const handleSubmit = async () => {
+    const newTotalStock = filament.stock + additionalStock;
+    
+    // Opdater filaments array direkte med den nye total
+    await onSubmit(filament.id!, newTotalStock);
+    
+    // Reset input og luk modal
+    setAdditionalStock(0);
+    onClose();
+  };
+
+  const handleAddFullRoll = () => {
+    setAdditionalStock(filament.weight);
+  };
+
+  // Beregn den nye total
+  const newTotal = filament.stock + additionalStock;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="sm">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Add Stock to {filament.name}</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack spacing={4}>
+            <FormControl>
+              <FormLabel>Current Stock</FormLabel>
+              <Input value={`${filament.stock}g`} isReadOnly />
+            </FormControl>
+            <FormControl isRequired>
+              <FormLabel>Additional Stock (g)</FormLabel>
+              <NumberInput
+                value={additionalStock}
+                onChange={(value) => setAdditionalStock(parseInt(value))}
+                min={0}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </FormControl>
+            <Button 
+              width="100%" 
+              colorScheme="green" 
+              variant="outline"
+              onClick={handleAddFullRoll}
+            >
+              Add Full Roll ({filament.weight}g)
+            </Button>
+            <Box width="100%" pt={2}>
+              <Text fontWeight="bold">
+                New Total: {newTotal}g
+              </Text>
+            </Box>
+          </VStack>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            colorScheme="blue" 
+            onClick={handleSubmit}
+            isDisabled={additionalStock <= 0}
+          >
+            Add Stock
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilaments }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -279,6 +541,8 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   const { addNotification } = useNotifications();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
+  const [editModalData, setEditModalData] = useState<FilamentType | null>(null);
+  const [addStockModalData, setAddStockModalData] = useState<FilamentType | null>(null);
 
   useEffect(() => {
     loadFilaments();
@@ -290,11 +554,36 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       const ops = new FilamentOperations(db);
       const data = await ops.getAllFilaments();
       setFilaments(data);
+      toast({
+        title: 'Success',
+        description: 'Data refreshed successfully',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
     } catch (err) {
       console.error('Failed to load filaments:', err);
       toast({
         title: 'Error',
         description: 'Failed to load filaments',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      const db = await initializeDatabase();
+      const ops = new FilamentOperations(db);
+      const data = await ops.getAllFilaments();
+      setFilaments(data);
+    } catch (err) {
+      console.error('Failed to refresh filaments:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh data',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -330,11 +619,13 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         low_stock_alert: formData.lowStockAlert,
       });
 
+      await loadFilaments(); // Genindlæs data
+
       toast({
         title: 'Success',
         description: 'Filament added successfully',
         status: 'success',
-        duration: 5000,
+        duration: 3000,
         isClosable: true,
       });
 
@@ -349,7 +640,6 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         amsSlot: null,
         lowStockAlert: 500,
       });
-      loadFilaments(); // Reload the list
     } catch (err) {
       console.error('Failed to add filament:', err);
       toast({
@@ -368,26 +658,36 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       const ops = new FilamentOperations(db);
       await ops.updateFilament(id, updates);
       
-      // Hvis stock opdateres til over alert niveau, fjern fra notificerede
+      // Opdater filaments array direkte
+      setFilaments(prevFilaments => 
+        prevFilaments.map(filament => 
+          filament.id === id 
+            ? { ...filament, ...updates }
+            : filament
+        )
+      );
+      
+      // Vis kun én toast besked ved stock opdatering
       if (updates.stock !== undefined) {
         const filament = filaments.find(f => f.id === id);
-        if (filament && updates.stock > (filament.low_stock_alert ?? 500)) {
-          setCheckedFilaments(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(id);
-            return newSet;
+        if (filament) {
+          if (updates.stock > (filament.low_stock_alert ?? 500)) {
+            setCheckedFilaments(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(id);
+              return newSet;
+            });
+          }
+          
+          toast({
+            title: 'Stock Updated',
+            description: `New stock level: ${updates.stock}g`,
+            status: 'success',
+            duration: 2000,
+            isClosable: true,
           });
         }
       }
-      
-      loadFilaments();
-      toast({
-        title: 'Success',
-        description: 'Filament updated successfully',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
     } catch (err) {
       console.error('Failed to update filament:', err);
       toast({
@@ -409,7 +709,9 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       const db = await initializeDatabase();
       const ops = new FilamentOperations(db);
       await ops.addFilament(data);
-      loadFilaments();
+      
+      await loadFilaments(); // Genindlæs data
+      
       toast({
         title: 'Success',
         description: 'Filament copied successfully',
@@ -441,7 +743,9 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       const db = await initializeDatabase();
       const ops = new FilamentOperations(db);
       await ops.deleteFilament(deleteFilament.id);
-      loadFilaments();
+      
+      await loadFilaments(); // Genindlæs data
+      
       toast({
         title: 'Success',
         description: 'Filament deleted successfully',
@@ -462,7 +766,6 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     }
   };
 
-  // Tilføj søgefunktion
   const filteredFilaments = useMemo(() => {
     return filaments.filter(filament => {
       const searchLower = searchQuery.toLowerCase();
@@ -474,7 +777,6 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     });
   }, [filaments, searchQuery]);
 
-  // Tilføj sorteringsfunktion
   const sortedFilaments = useMemo(() => {
     const sorted = [...filteredFilaments].sort((a, b) => {
       if (a[sortConfig.key] === null) return 1;
@@ -499,7 +801,6 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     }));
   };
 
-  // Tilføj søge- og sorteringskomponenter over tabellen
   const renderSortIcon = (columnKey: keyof FilamentType) => {
     if (sortConfig.key !== columnKey) {
       return null;
@@ -507,6 +808,14 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     return sortConfig.direction === 'asc' ? 
       <Icon as={ChevronUpIcon} w={4} h={4} /> : 
       <Icon as={ChevronDownIcon} w={4} h={4} />;
+  };
+
+  const handleEdit = (filament: FilamentType) => {
+    setEditModalData(filament);
+  };
+
+  const handleAddStock = (filament: FilamentType) => {
+    setAddStockModalData(filament);
   };
 
   return (
@@ -520,17 +829,26 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
             Manage your filaments
           </Text>
         </Box>
-        <Button
-          leftIcon={<Icon as={PlusIcon} boxSize={5} />}
-          colorScheme="blue"
-          size="md"
-          onClick={onOpen}
-        >
-          Add Filament
-        </Button>
+        <Flex gap={2}>
+          <Button
+            leftIcon={<Icon as={ArrowPathIcon} boxSize={5} />}
+            colorScheme="gray"
+            size="md"
+            onClick={handleRefresh}
+          >
+            Refresh
+          </Button>
+          <Button
+            leftIcon={<Icon as={PlusIcon} boxSize={5} />}
+            colorScheme="blue"
+            size="md"
+            onClick={onOpen}
+          >
+            Add Filament
+          </Button>
+        </Flex>
       </Flex>
 
-      {/* Søgefelt */}
       <Box mb={4}>
         <InputGroup>
           <InputLeftElement pointerEvents="none">
@@ -544,7 +862,6 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         </InputGroup>
       </Box>
 
-      {/* Filament Table */}
       <Box bg="white" p={6} rounded="lg" shadow="sm">
         <Table variant="simple">
           <Thead>
@@ -588,7 +905,6 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
             </Tr>
           </Thead>
           <Tbody>
-            {/* Opdater filaments.map til sortedFilaments.map */}
             {sortedFilaments.map((filament) => (
               <Tr key={filament.id}>
                 <Td>{filament.name}</Td>
@@ -597,12 +913,17 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                 <Td isNumeric>
                   <Editable
                     defaultValue={filament.price.toFixed(2).replace('.', ',')}
-                    onSubmit={(value) => handleUpdate(filament.id!, { price: normalizeDecimal(value) })}
+                    onSubmit={(value) => {
+                      const numericValue = parseFloat(value.replace(',', '.'));
+                      if (!isNaN(numericValue)) {
+                        handleUpdate(filament.id!, { price: numericValue });
+                      }
+                    }}
                   >
                     <EditablePreview />
                     <EditableInput 
-                      type="text" 
-                      pattern="[0-9]*[.,]?[0-9]*"
+                      type="text"
+                      pattern="\d*,?\d{0,2}"
                     />
                   </Editable>
                 </Td>
@@ -634,6 +955,21 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                 <Td>
                   <Flex gap={2}>
                     <IconButton
+                      aria-label="Add stock"
+                      icon={<Icon as={PlusIcon} />}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="green"
+                      onClick={() => handleAddStock(filament)}
+                    />
+                    <IconButton
+                      aria-label="Edit filament"
+                      icon={<Icon as={PencilIcon} />}
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleEdit(filament)}
+                    />
+                    <IconButton
                       aria-label="Copy filament"
                       icon={<Icon as={DocumentDuplicateIcon} />}
                       size="sm"
@@ -656,7 +992,6 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         </Table>
       </Box>
 
-      {/* Add Filament Modal */}
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
         <ModalContent>
@@ -697,24 +1032,26 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
 
               <FormControl isRequired>
                 <FormLabel>Price per kg (DKK)</FormLabel>
-                <NumberInput
-                  value={formData.pricePerKg.toFixed(2).replace('.', ',')}
-                  onChange={(valueString) => {
-                    const numericValue = normalizeDecimal(valueString);
-                    handleInputChange('pricePerKg', numericValue);
+                <Editable
+                  placeholder="0,00"
+                  defaultValue={formData.pricePerKg.toFixed(2).replace('.', ',')}
+                  onChange={(value) => {
+                    const cleanValue = value.replace(/[^\d,.]/g, '').replace(/,/g, '.');
+                    const parts = cleanValue.split('.');
+                    const finalValue = parts.length > 1 
+                      ? `${parts[0]}.${parts[1].slice(0, 2)}`
+                      : cleanValue;
+                    
+                    const numericValue = parseFloat(finalValue);
+                    if (!isNaN(numericValue)) {
+                      handleInputChange('pricePerKg', numericValue);
+                    }
                   }}
-                  min={0}
-                  precision={2}
-                  step={0.01}
-                  format={(val) => val.replace('.', ',')}
-                  parse={(val) => normalizeDecimal(val)}
+                  startWithEditView
                 >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
+                  <EditablePreview />
+                  <EditableInput />
+                </Editable>
               </FormControl>
 
               <FormControl isRequired>
@@ -737,7 +1074,13 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                 <FormLabel mb="0">Use AMS</FormLabel>
                 <Switch
                   isChecked={formData.useAms}
-                  onChange={(e) => handleAmsToggle(e.target.checked)}
+                  onChange={(e) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      useAms: e.target.checked,
+                      amsSlot: e.target.checked ? prev.amsSlot || 1 : null
+                    }));
+                  }}
                 />
               </FormControl>
 
@@ -823,6 +1166,30 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
             </ModalFooter>
           </ModalContent>
         </Modal>
+      )}
+
+      {editModalData && (
+        <EditFilamentModal
+          isOpen={editModalData !== null}
+          onClose={() => setEditModalData(null)}
+          filamentData={editModalData}
+          onSubmit={handleUpdate}
+        />
+      )}
+
+      {addStockModalData && (
+        <AddStockModal
+          isOpen={addStockModalData !== null}
+          onClose={() => {
+            setAddStockModalData(null);
+            loadFilaments(); // Genindlæs data når modalen lukkes
+          }}
+          filament={addStockModalData}
+          onSubmit={async (id, newStock) => {
+            await handleUpdate(id, { stock: newStock });
+            await loadFilaments();
+          }}
+        />
       )}
     </Box>
   );

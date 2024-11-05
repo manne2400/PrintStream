@@ -13,6 +13,24 @@ export interface Filament {
   low_stock_alert?: number
 }
 
+export interface Project {
+  id?: number;
+  name: string;
+  description: string;
+  print_time: number;
+  post_processing_time: number;
+  extra_costs: number;
+  created_at?: string;
+}
+
+export interface ProjectFilament {
+  id?: number;
+  project_id: number;
+  filament_id: number;
+  amount: number
+  filament?: Filament;  // For at inkludere filament detaljer når vi henter data
+}
+
 export class FilamentOperations {
   private db: Database
 
@@ -89,5 +107,69 @@ export class FilamentOperations {
       [amsSlot]
     );
     return result;
+  }
+}
+
+export class ProjectOperations {
+  private db: Database;
+
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return this.db.all('SELECT * FROM projects ORDER BY created_at DESC');
+  }
+
+  async addProject(project: Omit<Project, 'id' | 'created_at'>): Promise<number> {
+    const result = await this.db.run(
+      'INSERT INTO projects (name, description, print_time, post_processing_time, extra_costs) VALUES (?, ?, ?, ?, ?)',
+      [
+        project.name,
+        project.description,
+        project.print_time,
+        project.post_processing_time,
+        project.extra_costs
+      ]
+    );
+    return result.lastID;
+  }
+
+  async addProjectFilament(projectFilament: Omit<ProjectFilament, 'id'>): Promise<number> {
+    const result = await this.db.run(
+      'INSERT INTO project_filaments (project_id, filament_id, amount) VALUES (?, ?, ?)',
+      [
+        projectFilament.project_id,
+        projectFilament.filament_id,
+        projectFilament.amount
+      ]
+    );
+    return result.lastID;
+  }
+
+  async getProjectFilaments(projectId: number): Promise<ProjectFilament[]> {
+    return this.db.all(`
+      SELECT pf.*, f.name as filament_name, f.type as filament_type, f.color as filament_color
+      FROM project_filaments pf
+      JOIN filaments f ON pf.filament_id = f.id
+      WHERE pf.project_id = ?
+    `, [projectId]);
+  }
+
+  async updateProject(id: number, project: Partial<Project>): Promise<void> {
+    const updates = Object.keys(project)
+      .map(key => `${key} = ?`)
+      .join(', ');
+    const values = [...Object.values(project), id];
+    
+    await this.db.run(`UPDATE projects SET ${updates} WHERE id = ?`, values);
+  }
+
+  async deleteProject(id: number): Promise<void> {
+    await this.db.run('DELETE FROM projects WHERE id = ?', [id]);
+  }
+
+  async deleteProjectFilament(id: number): Promise<void> {
+    await this.db.run('DELETE FROM project_filaments WHERE id = ?', [id]);
   }
 } 
