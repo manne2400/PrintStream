@@ -52,7 +52,7 @@ const initializeDatabase = async (): Promise<Database> => {
     })
   }
 
-  // Opret tabeller hvis de ikke findes
+  // Opret filaments tabel med low_stock_alert kolonne
   await exec(`
     CREATE TABLE IF NOT EXISTS filaments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,35 +63,23 @@ const initializeDatabase = async (): Promise<Database> => {
       price REAL NOT NULL,
       stock REAL NOT NULL,
       ams_slot INTEGER,
+      low_stock_alert REAL DEFAULT 500,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+  `);
 
-    CREATE TABLE IF NOT EXISTS projects (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      description TEXT,
-      status TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS filament_usage (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      project_id INTEGER,
-      filament_id INTEGER,
-      amount REAL NOT NULL,
-      FOREIGN KEY (project_id) REFERENCES projects (id),
-      FOREIGN KEY (filament_id) REFERENCES filaments (id)
-    );
-
-    CREATE TABLE IF NOT EXISTS sales (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      project_id INTEGER,
-      amount REAL NOT NULL,
-      date DATETIME DEFAULT CURRENT_TIMESTAMP,
-      status TEXT NOT NULL,
-      FOREIGN KEY (project_id) REFERENCES projects (id)
-    );
-  `)
+  // Tilføj low_stock_alert kolonne hvis den ikke findes
+  try {
+    await exec(`
+      ALTER TABLE filaments 
+      ADD COLUMN low_stock_alert REAL DEFAULT 500;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
 
   return { run, get, all, exec }
 }

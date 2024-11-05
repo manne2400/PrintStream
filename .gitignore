@@ -25,4 +25,9 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
-*.swo 
+*.swo
+
+# Database filer
+*.sqlite
+*.sqlite3
+*.db
