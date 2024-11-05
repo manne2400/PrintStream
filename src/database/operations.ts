@@ -27,8 +27,10 @@ export interface ProjectFilament {
   id?: number;
   project_id: number;
   filament_id: number;
-  amount: number
-  filament?: Filament;  // For at inkludere filament detaljer når vi henter data
+  amount: number;
+  filament_name?: string;
+  filament_type?: string;
+  filament_color?: string;
 }
 
 export class FilamentOperations {
