@@ -23,9 +23,10 @@ interface SortConfig {
 interface NewSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSaleComplete: () => void;
 }
 
-const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose }) => {
+const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
   const [formData, setFormData] = useState({
     printJobId: '',
     customerId: '',
@@ -107,6 +108,15 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose }) => {
         currency: settings.currency
       });
 
+      // Opdater print job quantity i stedet for at slette det
+      const remainingQuantity = printJob.quantity - formData.quantity;
+      if (remainingQuantity > 0) {
+        await printJobOps.updatePrintJob(printJob.id!, { quantity: remainingQuantity });
+      } else {
+        // Kun slet hvis der ikke er flere prints tilbage
+        await printJobOps.deletePrintJob(printJob.id!);
+      }
+
       toast({
         title: 'Success',
         description: 'Sale created successfully',
@@ -116,6 +126,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose }) => {
       });
 
       onClose();
+      if (onSaleComplete) onSaleComplete();
     } catch (err) {
       console.error('Failed to create sale:', err);
       toast({
@@ -405,8 +416,8 @@ const Sales: React.FC = () => {
         isOpen={isOpen} 
         onClose={() => {
           setIsOpen(false);
-          loadSales();
-        }} 
+        }}
+        onSaleComplete={loadSales}
       />
     </Box>
   );
