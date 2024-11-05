@@ -12,6 +12,7 @@ import {
 import { PlusIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon, PencilIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { ProjectOperations, FilamentOperations, Project, Filament } from '../database/operations';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface ProjectFormData {
   name: string;
@@ -378,6 +379,9 @@ const Projects: React.FC = () => {
   const [deleteProject, setDeleteProject] = useState<Project | null>(null);
   const [copyModalData, setCopyModalData] = useState<Project | null>(null);
 
+  // Tilføj currency hook
+  const { currency } = useCurrency();
+
   useEffect(() => {
     loadProjects();
     loadFilaments();
@@ -690,7 +694,7 @@ const Projects: React.FC = () => {
                 <Td>{project.description}</Td>
                 <Td isNumeric>{project.print_time} min</Td>
                 <Td isNumeric>{project.post_processing_time} min</Td>
-                <Td isNumeric>${project.extra_costs}</Td>
+                <Td isNumeric>{currency} {project.extra_costs.toFixed(2)}</Td>
                 <Td>
                   <Button
                     size="sm"

@@ -5,7 +5,7 @@ import {
   useToast, InputGroup, InputLeftElement, Input,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter,
   FormControl, FormLabel, Select, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper,
-  VStack, Textarea, Badge
+  VStack, Textarea, Badge, Divider
 } from '@chakra-ui/react';
 import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
@@ -26,6 +26,17 @@ interface NewSaleModalProps {
   onSaleComplete: () => void;
 }
 
+interface CostBreakdown {
+  materialCost: number;
+  printingCost: number;
+  postProcessingCost: number;
+  extraCosts: number;
+  totalCost: number;
+  suggestedPrice: number;
+  profitMargin: number;
+  expectedProfit: number;
+}
+
 const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
   const [formData, setFormData] = useState({
     printJobId: '',
@@ -41,6 +52,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
   const [selectedPrintJob, setSelectedPrintJob] = useState<any>(null);
   const { currency } = useCurrency();
   const toast = useToast();
+  const [costBreakdown, setCostBreakdown] = useState<CostBreakdown | null>(null);
 
   useEffect(() => {
     loadPrintJobs();
@@ -139,6 +151,87 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
     }
   };
 
+  const handlePrintJobChange = async (printJobId: string) => {
+    try {
+      const printJob = printJobs.find(pj => pj.id === parseInt(printJobId));
+      if (!printJob) return;
+
+      const db = await initializeDatabase();
+      const printJobOps = new PrintJobOperations(db);
+      const settingsOps = new SettingsOperations(db);
+      
+      // Hent omkostninger og settings
+      const costs = await printJobOps.calculateProjectCosts(printJob.project_id);
+      const settings = await settingsOps.getSettings();
+      const profitMargin = settings.profit_margin ?? 30;
+      
+      // Beregn foreslået salgspris baseret på omkostninger og profit margin
+      const totalCost = costs.totalCost / printJob.quantity; // Omkostning per enhed
+      const suggestedPrice = totalCost * (1 + profitMargin / 100);
+      const expectedProfit = suggestedPrice - totalCost;
+      
+      setCostBreakdown({
+        materialCost: costs.materialCost / printJob.quantity,
+        printingCost: costs.printingCost / printJob.quantity,
+        postProcessingCost: costs.postProcessingCost / printJob.quantity,
+        extraCosts: costs.extraCosts / printJob.quantity,
+        totalCost,
+        suggestedPrice,
+        profitMargin,
+        expectedProfit
+      });
+      
+      // Sæt den foreslåede pris som standard
+      setFormData(prev => ({
+        ...prev,
+        printJobId,
+        unitPrice: suggestedPrice,
+        quantity: 1 // Reset quantity når nyt print job vælges
+      }));
+    } catch (err) {
+      console.error('Failed to calculate costs:', err);
+    }
+  };
+
+  // Tilføj ny funktion til at håndtere quantity ændringer
+  const handleQuantityChange = (newQuantity: number) => {
+    if (!costBreakdown) return;
+
+    // Opdater formData med ny quantity
+    setFormData(prev => ({
+      ...prev,
+      quantity: newQuantity,
+      // Behold samme unit price
+      unitPrice: costBreakdown.suggestedPrice
+    }));
+
+    // Opdater cost breakdown med nye totaler
+    setCostBreakdown(prev => {
+      if (!prev) return prev;
+
+      // Beregn totaler baseret på original pris per enhed
+      const perUnit = {
+        materialCost: prev.materialCost / formData.quantity,
+        printingCost: prev.printingCost / formData.quantity,
+        postProcessingCost: prev.postProcessingCost / formData.quantity,
+        extraCosts: prev.extraCosts / formData.quantity,
+        totalCost: prev.totalCost / formData.quantity,
+      };
+
+      // Gang med det nye antal
+      return {
+        materialCost: perUnit.materialCost * newQuantity,
+        printingCost: perUnit.printingCost * newQuantity,
+        postProcessingCost: perUnit.postProcessingCost * newQuantity,
+        extraCosts: perUnit.extraCosts * newQuantity,
+        totalCost: perUnit.totalCost * newQuantity,
+        suggestedPrice: prev.suggestedPrice, // Denne forbliver den samme per enhed
+        profitMargin: prev.profitMargin, // Denne forbliver den samme
+        expectedProfit: (prev.suggestedPrice * newQuantity) - (perUnit.totalCost * newQuantity)
+      };
+    });
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
@@ -151,7 +244,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
               <FormLabel>Print Job</FormLabel>
               <Select
                 value={formData.printJobId}
-                onChange={(e) => setFormData(prev => ({ ...prev, printJobId: e.target.value }))}
+                onChange={(e) => handlePrintJobChange(e.target.value)}
                 placeholder="Select print job"
               >
                 {printJobs.map(job => (
@@ -181,8 +274,9 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
               <FormLabel>Quantity</FormLabel>
               <NumberInput
                 value={formData.quantity}
-                onChange={(value) => setFormData(prev => ({ ...prev, quantity: parseInt(value) }))}
+                onChange={(value) => handleQuantityChange(parseInt(value))}
                 min={1}
+                max={selectedPrintJob?.quantity || 999999}
               >
                 <NumberInputField />
                 <NumberInputStepper>
@@ -234,6 +328,53 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
                 placeholder="Add any additional notes..."
               />
             </FormControl>
+
+            {costBreakdown && (
+              <Box width="100%" p={4} borderWidth={1} borderRadius="md">
+                <Heading size="sm" mb={2}>Cost Breakdown (Total for {formData.quantity} units)</Heading>
+                <VStack align="stretch" spacing={2}>
+                  <Flex justify="space-between">
+                    <Text>Material Cost:</Text>
+                    <Text>{currency} {costBreakdown.materialCost.toFixed(2)}</Text>
+                  </Flex>
+                  <Flex justify="space-between">
+                    <Text>Printing Cost:</Text>
+                    <Text>{currency} {costBreakdown.printingCost.toFixed(2)}</Text>
+                  </Flex>
+                  <Flex justify="space-between">
+                    <Text>Post-Processing Cost:</Text>
+                    <Text>{currency} {costBreakdown.postProcessingCost.toFixed(2)}</Text>
+                  </Flex>
+                  <Flex justify="space-between">
+                    <Text>Extra Costs:</Text>
+                    <Text>{currency} {costBreakdown.extraCosts.toFixed(2)}</Text>
+                  </Flex>
+                  <Divider />
+                  <Flex justify="space-between" fontWeight="bold">
+                    <Text>Total Cost:</Text>
+                    <Text>{currency} {costBreakdown.totalCost.toFixed(2)}</Text>
+                  </Flex>
+                  <Divider />
+                  <Flex justify="space-between" color="green.500">
+                    <Text>Profit Margin:</Text>
+                    <Text>{costBreakdown.profitMargin}%</Text>
+                  </Flex>
+                  <Flex justify="space-between" fontWeight="bold" color="green.500">
+                    <Text>Expected Profit:</Text>
+                    <Text>{currency} {costBreakdown.expectedProfit.toFixed(2)}</Text>
+                  </Flex>
+                  <Divider />
+                  <Flex justify="space-between" fontWeight="bold" fontSize="lg" color="blue.500">
+                    <Text>Suggested Price (per unit):</Text>
+                    <Text>{currency} {costBreakdown.suggestedPrice.toFixed(2)}</Text>
+                  </Flex>
+                  <Flex justify="space-between" fontWeight="bold" fontSize="lg" color="blue.500">
+                    <Text>Total Price ({formData.quantity} units):</Text>
+                    <Text>{currency} {(costBreakdown.suggestedPrice * formData.quantity).toFixed(2)}</Text>
+                  </Flex>
+                </VStack>
+              </Box>
+            )}
           </VStack>
         </ModalBody>
 
