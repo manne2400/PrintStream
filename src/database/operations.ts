@@ -280,6 +280,11 @@ export class SettingsOperations {
     
     await this.db.run(`UPDATE settings SET ${updates} WHERE id = 1`, values);
   }
+
+  async getCurrency(): Promise<string> {
+    const settings = await this.db.get('SELECT currency FROM settings LIMIT 1');
+    return settings?.currency || 'DKK';
+  }
 }
 
 export class PrintJobOperations {

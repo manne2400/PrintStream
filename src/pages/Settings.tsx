@@ -7,6 +7,7 @@ import {
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
 import { SettingsOperations, Settings as SettingsType } from '../database/operations';
+import { useCurrency } from '../context/CurrencyContext';
 
 const Settings: React.FC = () => {
   const toast = useToast();
@@ -21,6 +22,7 @@ const Settings: React.FC = () => {
     bank_details: '',
     vat_id: ''
   });
+  const { updateCurrency } = useCurrency();
 
   useEffect(() => {
     loadSettings();
@@ -77,6 +79,25 @@ const Settings: React.FC = () => {
       });
     }
   };
+
+  const handleCurrencyChange = async (newCurrency: string) => {
+    setSettings(prev => ({ ...prev, currency: newCurrency }));
+    await updateCurrency(newCurrency);
+  };
+
+  // Tilføj valuta konstant
+  const CURRENCIES = [
+    { code: 'DKK', name: 'Danish Krone' },
+    { code: 'EUR', name: 'Euro' },
+    { code: 'USD', name: 'US Dollar' },
+    { code: 'GBP', name: 'British Pound' },
+    { code: 'JPY', name: 'Japanese Yen' },
+    { code: 'CHF', name: 'Swiss Franc' },
+    { code: 'SEK', name: 'Swedish Krona' },
+    { code: 'NOK', name: 'Norwegian Krone' },
+    { code: 'AUD', name: 'Australian Dollar' },
+    { code: 'CAD', name: 'Canadian Dollar' }
+  ];
 
   return (
     <Box>
@@ -141,11 +162,13 @@ const Settings: React.FC = () => {
               <FormLabel>Currency</FormLabel>
               <Select
                 value={settings.currency}
-                onChange={(e) => setSettings(prev => ({ ...prev, currency: e.target.value }))}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
               >
-                <option value="DKK">DKK</option>
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
+                {CURRENCIES.map(currency => (
+                  <option key={currency.code} value={currency.code}>
+                    {currency.code} - {currency.name}
+                  </option>
+                ))}
               </Select>
             </FormControl>
           </VStack>

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { ChakraProvider, useToast } from '@chakra-ui/react';
 import Layout from './components/Layout';
 import { NotificationProvider, useNotifications } from './context/NotificationContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 import initializeDatabase from './database/setup';
 import { FilamentOperations } from './database/operations';
 
@@ -101,7 +102,9 @@ const App: React.FC = () => {
   return (
     <ChakraProvider>
       <NotificationProvider>
-        <AppContent />
+        <CurrencyProvider>
+          <AppContent />
+        </CurrencyProvider>
       </NotificationProvider>
     </ChakraProvider>
   );

@@ -12,6 +12,7 @@ import {
 import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { ProjectOperations, CustomerOperations, FilamentOperations, PrintJobOperations, Project, Customer } from '../database/operations';
+import { useCurrency } from '../context/CurrencyContext';
 
 interface PrintJobFormData {
   projectId: number;
@@ -62,6 +63,8 @@ const PrintInventory: React.FC = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'project_id', direction: 'asc' });
+
+  const { currency } = useCurrency();
 
   useEffect(() => {
     loadProjects();
@@ -471,28 +474,28 @@ const PrintInventory: React.FC = () => {
                   <VStack align="stretch" spacing={2}>
                     <Flex justify="space-between">
                       <Text>Material Cost:</Text>
-                      <Text>${costBreakdown.materialCost.toFixed(2)}</Text>
+                      <Text>{currency} {costBreakdown.materialCost.toFixed(2)}</Text>
                     </Flex>
                     <Flex justify="space-between">
                       <Text>Printing Cost:</Text>
-                      <Text>${costBreakdown.printingCost.toFixed(2)}</Text>
+                      <Text>{currency} {costBreakdown.printingCost.toFixed(2)}</Text>
                     </Flex>
                     <Flex justify="space-between">
                       <Text>Post-Processing Cost:</Text>
-                      <Text>${costBreakdown.postProcessingCost.toFixed(2)}</Text>
+                      <Text>{currency} {costBreakdown.postProcessingCost.toFixed(2)}</Text>
                     </Flex>
                     <Flex justify="space-between">
                       <Text>Extra Costs:</Text>
-                      <Text>${costBreakdown.extraCosts.toFixed(2)}</Text>
+                      <Text>{currency} {costBreakdown.extraCosts.toFixed(2)}</Text>
                     </Flex>
                     <Divider />
                     <Flex justify="space-between" fontWeight="bold">
                       <Text>Total Cost:</Text>
-                      <Text>${costBreakdown.totalCost.toFixed(2)}</Text>
+                      <Text>{currency} {costBreakdown.totalCost.toFixed(2)}</Text>
                     </Flex>
                     <Flex justify="space-between" fontWeight="bold" color="blue.500">
                       <Text>Cost per Unit:</Text>
-                      <Text>${(costBreakdown.totalCost / formData.quantity).toFixed(2)}</Text>
+                      <Text>{currency} {(costBreakdown.totalCost / formData.quantity).toFixed(2)}</Text>
                     </Flex>
                   </VStack>
                 </Box>
