@@ -140,6 +140,7 @@ const initializeDatabase = async (): Promise<Database> => {
       printer_hourly_rate REAL DEFAULT 0,
       post_processing_cost REAL DEFAULT 0,
       currency TEXT DEFAULT 'DKK',
+      profit_margin REAL DEFAULT 30,
       company_name TEXT,
       company_address TEXT,
       company_phone TEXT,
@@ -148,6 +149,19 @@ const initializeDatabase = async (): Promise<Database> => {
       vat_id TEXT
     );
   `);
+
+  // Tilføj profit_margin kolonne hvis den ikke findes
+  try {
+    await exec(`
+      ALTER TABLE settings 
+      ADD COLUMN profit_margin REAL DEFAULT 30;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
 
   // Indsæt standard indstillinger hvis tabellen er tom
   const settingsCount = await get('SELECT COUNT(*) as count FROM settings');

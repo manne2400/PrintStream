@@ -148,15 +148,53 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ isOpen, onClose, pr
     loadData();
   }, [projectData.id]);
 
-  const handleSubmit = () => {
-    onSubmit(projectData.id!, {
-      name: editData.name,
-      description: editData.description,
-      print_time: editData.printTime,
-      post_processing_time: editData.postProcessingTime,
-      extra_costs: editData.extraCosts
-    });
-    onClose();
+  const handleSubmit = async () => {
+    try {
+      const db = await initializeDatabase();
+      const ops = new ProjectOperations(db);
+      
+      // Opdater projekt detaljer
+      await ops.updateProject(projectData.id!, {
+        name: editData.name,
+        description: editData.description,
+        print_time: editData.printTime,
+        post_processing_time: editData.postProcessingTime,
+        extra_costs: editData.extraCosts
+      });
+
+      // Slet eksisterende filaments for projektet
+      const existingFilaments = await ops.getProjectFilaments(projectData.id!);
+      for (const filament of existingFilaments) {
+        await ops.deleteProjectFilament(filament.id!);
+      }
+
+      // Tilføj de nye filaments
+      for (const filament of editData.filaments) {
+        await ops.addProjectFilament({
+          project_id: projectData.id!,
+          filament_id: filament.filamentId,
+          amount: filament.amount
+        });
+      }
+
+      onSubmit(projectData.id!, {
+        name: editData.name,
+        description: editData.description,
+        print_time: editData.printTime,
+        post_processing_time: editData.postProcessingTime,
+        extra_costs: editData.extraCosts
+      });
+      
+    } catch (err) {
+      console.error('Failed to update project filaments:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to update project filaments',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   const handleAddFilament = () => {

@@ -358,4 +358,8 @@ export class PrintJobOperations {
   async deletePrintJob(id: number): Promise<void> {
     await this.db.run('DELETE FROM print_jobs WHERE id = ?', [id]);
   }
+
+  async deleteProjectPrints(projectId: number): Promise<void> {
+    await this.db.run('DELETE FROM print_jobs WHERE project_id = ?', [projectId]);
+  }
 } 

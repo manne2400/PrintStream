@@ -118,6 +118,26 @@ const Settings: React.FC = () => {
             </FormControl>
 
             <FormControl>
+              <FormLabel>Default Profit Margin (%)</FormLabel>
+              <NumberInput
+                value={settings.profit_margin}
+                onChange={(value) => setSettings(prev => ({ ...prev, profit_margin: parseFloat(value) }))}
+                min={0}
+                max={100}
+                precision={1}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+              <Text fontSize="sm" color="gray.500" mt={1}>
+                This percentage will be used to calculate suggested selling prices
+              </Text>
+            </FormControl>
+
+            <FormControl>
               <FormLabel>Currency</FormLabel>
               <Select
                 value={settings.currency}

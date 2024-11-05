@@ -7,9 +7,9 @@ import {
   NumberInput, NumberInputField, NumberInputStepper,
   NumberIncrementStepper, NumberDecrementStepper,
   VStack, Table, Thead, Tbody, Tr, Th, Td,
-  useToast, Divider, IconButton
+  useToast, Divider, IconButton, InputGroup, InputLeftElement
 } from '@chakra-ui/react';
-import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { ProjectOperations, CustomerOperations, FilamentOperations, PrintJobOperations, Project, Customer } from '../database/operations';
 
@@ -36,6 +36,12 @@ interface GroupedPrintJob {
   prints: PrintJob[];
 }
 
+// Tilføj SortConfig interface
+interface SortConfig {
+  key: keyof PrintJob;
+  direction: 'asc' | 'desc';
+}
+
 const PrintInventory: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -53,6 +59,9 @@ const PrintInventory: React.FC = () => {
   // Tilføj state for edit og delete
   const [editModalData, setEditModalData] = useState<PrintJob | null>(null);
   const [deleteJob, setDeleteJob] = useState<PrintJob | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'project_id', direction: 'asc' });
 
   useEffect(() => {
     loadProjects();
@@ -223,33 +232,40 @@ const PrintInventory: React.FC = () => {
     }
   };
 
-  // Tilføj handleDelete funktion
-  const handleDelete = (job: PrintJob) => {
-    setDeleteJob(job);
+  // Opdater handleDelete funktionen
+  const handleDelete = (group: GroupedPrintJob) => {
+    setDeleteJob({
+      ...group.prints[0],
+      project_name: group.project_name,
+      quantity: group.total_quantity
+    });
   };
 
-  // Tilføj confirmDelete funktion
+  // Opdater confirmDelete funktionen
   const confirmDelete = async () => {
-    if (!deleteJob?.id) return;
+    if (!deleteJob?.project_id) return;
     
     try {
       const db = await initializeDatabase();
       const ops = new PrintJobOperations(db);
-      await ops.deletePrintJob(deleteJob.id);
+      
+      // Slet alle prints for dette projekt
+      await ops.deleteProjectPrints(deleteJob.project_id);
+      
       await loadPrintJobs();
       toast({
         title: 'Success',
-        description: 'Print job deleted successfully',
+        description: 'Print jobs deleted successfully',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
       setDeleteJob(null);
     } catch (err) {
-      console.error('Failed to delete print job:', err);
+      console.error('Failed to delete print jobs:', err);
       toast({
         title: 'Error',
-        description: 'Failed to delete print job',
+        description: 'Failed to delete print jobs',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -278,6 +294,51 @@ const PrintInventory: React.FC = () => {
     return Object.values(groups);
   }, [printJobs]);
 
+  // Tilføj søgefunktion
+  const filteredPrintJobs = useMemo(() => {
+    return printJobs.filter(job => {
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        job.project_name?.toLowerCase().includes(searchLower) ||
+        job.customer_name?.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [printJobs, searchQuery]);
+
+  // Tilføj sorteringsfunktion
+  const sortedPrintJobs = useMemo(() => {
+    return [...filteredPrintJobs].sort((a, b) => {
+      if (a[sortConfig.key] === null) return 1;
+      if (b[sortConfig.key] === null) return -1;
+
+      let comparison = 0;
+      if (typeof a[sortConfig.key] === 'string') {
+        comparison = (a[sortConfig.key] as string).localeCompare(b[sortConfig.key] as string);
+      } else {
+        comparison = (a[sortConfig.key] as number) - (b[sortConfig.key] as number);
+      }
+      
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
+  }, [filteredPrintJobs, sortConfig]);
+
+  const handleSort = (key: keyof PrintJob) => {
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const renderSortIcon = (columnKey: keyof PrintJob) => {
+    if (sortConfig.key !== columnKey) {
+      return null;
+    }
+    return sortConfig.direction === 'asc' ? 
+      <Icon as={ChevronUpIcon} w={4} h={4} /> : 
+      <Icon as={ChevronDownIcon} w={4} h={4} />;
+  };
+
+  // Tilføj søgefelt over tabellen
   return (
     <Box>
       <Flex justify="space-between" align="center" mb={6}>
@@ -299,14 +360,38 @@ const PrintInventory: React.FC = () => {
         </Button>
       </Flex>
 
+      <Box mb={4}>
+        <InputGroup>
+          <InputLeftElement pointerEvents="none">
+            <Icon as={MagnifyingGlassIcon} color="gray.400" />
+          </InputLeftElement>
+          <Input
+            placeholder="Search prints..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </InputGroup>
+      </Box>
+
       <Box bg="white" p={6} rounded="lg" shadow="sm">
         <Table variant="simple">
           <Thead>
             <Tr>
-              <Th>Project</Th>
-              <Th>Customer</Th>
-              <Th>Date</Th>
-              <Th isNumeric>Quantity</Th>
+              <Th cursor="pointer" onClick={() => handleSort('project_id')}>
+                <Flex align="center">
+                  Project {renderSortIcon('project_id')}
+                </Flex>
+              </Th>
+              <Th cursor="pointer" onClick={() => handleSort('date')}>
+                <Flex align="center">
+                  Date {renderSortIcon('date')}
+                </Flex>
+              </Th>
+              <Th isNumeric cursor="pointer" onClick={() => handleSort('quantity')}>
+                <Flex align="center" justify="flex-end">
+                  Quantity {renderSortIcon('quantity')}
+                </Flex>
+              </Th>
               <Th>Status</Th>
               <Th>Actions</Th>
             </Tr>
@@ -315,7 +400,6 @@ const PrintInventory: React.FC = () => {
             {groupedPrintJobs.map((group) => (
               <Tr key={group.project_id}>
                 <Td>{group.project_name}</Td>
-                <Td>{group.customer_name || 'N/A'}</Td>
                 <Td>{group.date}</Td>
                 <Td isNumeric>{group.total_quantity}</Td>
                 <Td>In Progress</Td>
@@ -334,7 +418,7 @@ const PrintInventory: React.FC = () => {
                       size="sm"
                       variant="ghost"
                       colorScheme="red"
-                      onClick={() => handleDelete(group.prints[0])}
+                      onClick={() => handleDelete(group)}
                     />
                   </Flex>
                 </Td>
@@ -488,11 +572,11 @@ const PrintInventory: React.FC = () => {
         <Modal isOpen={deleteJob !== null} onClose={() => setDeleteJob(null)}>
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader>Delete Print Job</ModalHeader>
+            <ModalHeader>Delete Print Jobs</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <Text>
-                Are you sure you want to delete this print job? 
+                Are you sure you want to delete all prints ({deleteJob.quantity} items) for project "{deleteJob.project_name}"? 
                 This action cannot be undone.
               </Text>
             </ModalBody>
@@ -501,7 +585,7 @@ const PrintInventory: React.FC = () => {
                 Cancel
               </Button>
               <Button colorScheme="red" onClick={confirmDelete}>
-                Delete
+                Delete All
               </Button>
             </ModalFooter>
           </ModalContent>
