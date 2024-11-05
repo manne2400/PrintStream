@@ -106,6 +106,33 @@ const initializeDatabase = async (): Promise<Database> => {
     );
   `);
 
+  // Opdater customers tabel med contact_person
+  await exec(`
+    CREATE TABLE IF NOT EXISTS customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      contact_person TEXT,
+      email TEXT,
+      phone TEXT,
+      address TEXT,
+      vat_id TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Tilføj contact_person kolonne hvis den ikke findes
+  try {
+    await exec(`
+      ALTER TABLE customers 
+      ADD COLUMN contact_person TEXT;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
+
   return { run, get, all, exec }
 }
 

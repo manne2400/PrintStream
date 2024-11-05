@@ -33,6 +33,17 @@ export interface ProjectFilament {
   filament_color?: string;
 }
 
+export interface Customer {
+  id?: number;
+  name: string;
+  contact_person: string;
+  email: string;
+  phone: string;
+  address: string;
+  vat_id: string;
+  created_at?: string;
+}
+
 export class FilamentOperations {
   private db: Database
 
@@ -173,5 +184,45 @@ export class ProjectOperations {
 
   async deleteProjectFilament(id: number): Promise<void> {
     await this.db.run('DELETE FROM project_filaments WHERE id = ?', [id]);
+  }
+}
+
+export class CustomerOperations {
+  private db: Database;
+
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async getAllCustomers(): Promise<Customer[]> {
+    return this.db.all('SELECT * FROM customers ORDER BY name ASC');
+  }
+
+  async addCustomer(customer: Omit<Customer, 'id' | 'created_at'>): Promise<number> {
+    const result = await this.db.run(
+      'INSERT INTO customers (name, contact_person, email, phone, address, vat_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [
+        customer.name,
+        customer.contact_person,
+        customer.email,
+        customer.phone,
+        customer.address,
+        customer.vat_id
+      ]
+    );
+    return result.lastID;
+  }
+
+  async updateCustomer(id: number, customer: Partial<Customer>): Promise<void> {
+    const updates = Object.keys(customer)
+      .map(key => `${key} = ?`)
+      .join(', ');
+    const values = [...Object.values(customer), id];
+    
+    await this.db.run(`UPDATE customers SET ${updates} WHERE id = ?`, values);
+  }
+
+  async deleteCustomer(id: number): Promise<void> {
+    await this.db.run('DELETE FROM customers WHERE id = ?', [id]);
   }
 } 
