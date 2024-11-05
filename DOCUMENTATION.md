@@ -107,6 +107,54 @@ CREATE TABLE sales (
   FOREIGN KEY (project_id) REFERENCES projects (id)
 );
 
+## Database Schema Tilføjelser
+
+### Print Jobs
+- id (PRIMARY KEY)
+- project_id (FOREIGN KEY)
+- customer_id (FOREIGN KEY, nullable)
+- date (TEXT)
+- quantity (INTEGER)
+- price_per_unit (REAL)
+- created_at (DATETIME)
+
+## Nye Database Operationer
+
+### PrintJobOperations
+- getAllPrintJobs(): Henter alle print jobs med projekt og kunde info
+- addPrintJob(): Opretter nyt print job
+- updatePrintJob(): Opdaterer eksisterende print job
+- deletePrintJob(): Sletter print job
+- calculateProjectCosts(): Beregner omkostninger for et projekt:
+  - materialCost: Baseret på filament pris og mængde
+  - printingCost: (print_time / 60) * printer_hourly_rate
+  - postProcessingCost: (post_processing_time / 60) * post_processing_cost
+  - extraCosts: Fra projekt
+  - totalCost: Sum af alle omkostninger
+
+## Vigtige Funktioner
+
+### Print Job Håndtering
+- Automatisk beregning af omkostninger ved projekt valg
+- Gruppering af print jobs efter projekt
+- Automatisk fratrækning af filament fra lager ved print
+- Real-time opdatering af lager status
+
+### Projekt Integration
+- Direkte kobling mellem projekter og print jobs
+- Automatisk omkostningsberegning baseret på:
+  - Materialeforbrug
+  - Print tid
+  - Efterbehandlingstid
+  - Ekstra omkostninger
+
+### Lager Håndtering
+- Automatisk lagertræk ved print job oprettelse
+- Validering af tilgængelig filament
+- Gruppering af identiske prints
+
+## Nye TypeScript Interfaces
+
 ## 🛠 Development Setup
 ### Prerequisites
 Node.js (version 18+)

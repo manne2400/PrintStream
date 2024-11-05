@@ -57,6 +57,16 @@ export interface Settings {
   vat_id: string;
 }
 
+export interface PrintJob {
+  id?: number;
+  project_id: number;
+  customer_id?: number | null;
+  date: string;
+  quantity: number;
+  price_per_unit: number;
+  created_at?: string;
+}
+
 export class FilamentOperations {
   private db: Database
 
@@ -269,5 +279,83 @@ export class SettingsOperations {
     const values = Object.values(settings);
     
     await this.db.run(`UPDATE settings SET ${updates} WHERE id = 1`, values);
+  }
+}
+
+export class PrintJobOperations {
+  private db: Database;
+
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async getAllPrintJobs(): Promise<PrintJob[]> {
+    return this.db.all(`
+      SELECT pj.*, p.name as project_name, c.name as customer_name
+      FROM print_jobs pj
+      LEFT JOIN projects p ON pj.project_id = p.id
+      LEFT JOIN customers c ON pj.customer_id = c.id
+      ORDER BY pj.date DESC
+    `);
+  }
+
+  async addPrintJob(printJob: Omit<PrintJob, 'id' | 'created_at'>): Promise<number> {
+    const result = await this.db.run(
+      'INSERT INTO print_jobs (project_id, customer_id, date, quantity, price_per_unit) VALUES (?, ?, ?, ?, ?)',
+      [
+        printJob.project_id,
+        printJob.customer_id,
+        printJob.date,
+        printJob.quantity,
+        printJob.price_per_unit
+      ]
+    );
+    return result.lastID;
+  }
+
+  async calculateProjectCosts(projectId: number): Promise<{
+    materialCost: number;
+    printingCost: number;
+    postProcessingCost: number;
+    extraCosts: number;
+    totalCost: number;
+  }> {
+    const project = await this.db.get('SELECT * FROM projects WHERE id = ?', [projectId]);
+    const filaments = await this.db.all(`
+      SELECT f.price, pf.amount
+      FROM project_filaments pf
+      JOIN filaments f ON pf.filament_id = f.id
+      WHERE pf.project_id = ?
+    `, [projectId]);
+    
+    const settings = await this.db.get('SELECT * FROM settings LIMIT 1');
+    
+    const materialCost = filaments.reduce((total, f) => total + (f.price * f.amount / 1000), 0);
+    const printingCost = (project.print_time / 60) * (settings.printer_hourly_rate || 100);
+    const postProcessingCost = (project.post_processing_time / 60) * (settings.post_processing_cost || 100);
+    const extraCosts = project.extra_costs || 0;
+    
+    return {
+      materialCost,
+      printingCost,
+      postProcessingCost,
+      extraCosts,
+      totalCost: materialCost + printingCost + postProcessingCost + extraCosts
+    };
+  }
+
+  async updatePrintJob(id: number, updates: Partial<PrintJob>): Promise<void> {
+    const { project_name, customer_name, ...dbUpdates } = updates;
+    
+    const updates_sql = Object.keys(dbUpdates)
+      .map(key => `${key} = ?`)
+      .join(', ');
+    const values = [...Object.values(dbUpdates), id];
+    
+    await this.db.run(`UPDATE print_jobs SET ${updates_sql} WHERE id = ?`, values);
+  }
+
+  async deletePrintJob(id: number): Promise<void> {
+    await this.db.run('DELETE FROM print_jobs WHERE id = ?', [id]);
   }
 } 

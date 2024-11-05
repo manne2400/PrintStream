@@ -165,6 +165,21 @@ const initializeDatabase = async (): Promise<Database> => {
     `);
   }
 
+  // Tilføj print_jobs tabel
+  await exec(`
+    CREATE TABLE IF NOT EXISTS print_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      customer_id INTEGER,
+      date TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      price_per_unit REAL NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
+      FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE SET NULL
+    );
+  `);
+
   return { run, get, all, exec }
 }
 
