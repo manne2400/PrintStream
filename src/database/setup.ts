@@ -194,6 +194,35 @@ const initializeDatabase = async (): Promise<Database> => {
     );
   `);
 
+  // Tilføj sales tabel med alle nødvendige felter
+  await exec(`
+    CREATE TABLE IF NOT EXISTS sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      customer_id INTEGER,
+      print_job_id INTEGER NOT NULL,
+      invoice_number TEXT NOT NULL,
+      sale_date TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      unit_price REAL NOT NULL,
+      total_price REAL NOT NULL,
+      payment_status TEXT NOT NULL,
+      payment_due_date TEXT NOT NULL,
+      notes TEXT,
+      project_name TEXT NOT NULL,
+      customer_name TEXT,
+      material_cost REAL NOT NULL,
+      printing_cost REAL NOT NULL,
+      processing_cost REAL NOT NULL,
+      extra_costs REAL NOT NULL,
+      currency TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects (id),
+      FOREIGN KEY (customer_id) REFERENCES customers (id),
+      FOREIGN KEY (print_job_id) REFERENCES print_jobs (id)
+    );
+  `);
+
   return { run, get, all, exec }
 }
 

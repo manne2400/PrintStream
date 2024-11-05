@@ -10,7 +10,7 @@ import {
   Table, Thead, Tbody, Tr, Th, Td,
   useToast, Editable, EditableInput, EditablePreview, useEditableControls, IconButton, InputGroup, InputLeftElement
 } from '@chakra-ui/react';
-import { PlusIcon, PencilIcon, DocumentDuplicateIcon, TrashIcon, SearchIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, DocumentDuplicateIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { FilamentOperations, Filament as FilamentType } from '../database/operations';
 import { useNotifications } from '../context/NotificationContext';
@@ -852,7 +852,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       <Box mb={4}>
         <InputGroup>
           <InputLeftElement pointerEvents="none">
-            <Icon as={SearchIcon} color="gray.400" />
+            <Icon as={MagnifyingGlassIcon} color="gray.400" />
           </InputLeftElement>
           <Input
             placeholder="Search filaments..."

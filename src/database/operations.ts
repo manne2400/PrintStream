@@ -67,6 +67,29 @@ export interface PrintJob {
   created_at?: string;
 }
 
+export interface Sale {
+  id?: number;
+  project_id: number;
+  customer_id: number | null;
+  print_job_id: number;
+  invoice_number: string;
+  sale_date: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  payment_status: 'pending' | 'paid' | 'cancelled';
+  payment_due_date: string;
+  notes: string;
+  project_name: string;
+  customer_name: string | null;
+  material_cost: number;
+  printing_cost: number;
+  processing_cost: number;
+  extra_costs: number;
+  currency: string;
+  created_at?: string;
+}
+
 export class FilamentOperations {
   private db: Database
 
@@ -366,5 +389,69 @@ export class PrintJobOperations {
 
   async deleteProjectPrints(projectId: number): Promise<void> {
     await this.db.run('DELETE FROM print_jobs WHERE project_id = ?', [projectId]);
+  }
+}
+
+export class SalesOperations {
+  private db: Database;
+
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async getAllSales(): Promise<Sale[]> {
+    return this.db.all(`
+      SELECT * FROM sales ORDER BY sale_date DESC
+    `);
+  }
+
+  async addSale(sale: Omit<Sale, 'id' | 'created_at'>): Promise<number> {
+    const result = await this.db.run(`
+      INSERT INTO sales (
+        project_id, customer_id, print_job_id, invoice_number,
+        sale_date, quantity, unit_price, total_price,
+        payment_status, payment_due_date, notes,
+        project_name, customer_name,
+        material_cost, printing_cost, processing_cost, extra_costs,
+        currency
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      sale.project_id,
+      sale.customer_id,
+      sale.print_job_id,
+      sale.invoice_number,
+      sale.sale_date,
+      sale.quantity,
+      sale.unit_price,
+      sale.total_price,
+      sale.payment_status,
+      sale.payment_due_date,
+      sale.notes,
+      sale.project_name,
+      sale.customer_name,
+      sale.material_cost,
+      sale.printing_cost,
+      sale.processing_cost,
+      sale.extra_costs,
+      sale.currency
+    ]);
+    return result.lastID;
+  }
+
+  async getNextInvoiceNumber(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    const result = await this.db.get(
+      "SELECT MAX(CAST(SUBSTR(invoice_number, 6) AS INTEGER)) as max_num FROM sales WHERE invoice_number LIKE ?",
+      [`${currentYear}-%`]
+    );
+    const nextNum = (result?.max_num || 0) + 1;
+    return `${currentYear}-${String(nextNum).padStart(4, '0')}`;
+  }
+
+  async updatePaymentStatus(id: number, status: 'pending' | 'paid' | 'cancelled'): Promise<void> {
+    await this.db.run(
+      'UPDATE sales SET payment_status = ? WHERE id = ?',
+      [status, id]
+    );
   }
 } 
