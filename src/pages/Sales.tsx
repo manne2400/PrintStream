@@ -7,7 +7,7 @@ import {
   FormControl, FormLabel, Select, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper,
   VStack, Textarea, Badge, Divider
 } from '@chakra-ui/react';
-import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { SalesOperations } from '../database/operations';
 import { PrintJobOperations } from '../database/operations';
@@ -35,6 +35,13 @@ interface CostBreakdown {
   suggestedPrice: number;
   profitMargin: number;
   expectedProfit: number;
+}
+
+interface PaymentStatusModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  sale: Sale;
+  onSubmit: (id: number, status: 'pending' | 'paid' | 'cancelled') => void;
 }
 
 const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
@@ -395,6 +402,53 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
   );
 };
 
+const PaymentStatusModal: React.FC<PaymentStatusModalProps> = ({ isOpen, onClose, sale, onSubmit }) => {
+  const { currency } = useCurrency();
+  
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Update Payment Status</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack spacing={4}>
+            <Text>
+              Invoice #{sale.invoice_number} - {currency} {sale.total_price.toFixed(2)}
+            </Text>
+            <Text>Current Status: {sale.payment_status.toUpperCase()}</Text>
+            <Box width="100%">
+              <Button
+                width="100%"
+                colorScheme="green"
+                mb={2}
+                onClick={() => onSubmit(sale.id!, 'paid')}
+              >
+                Mark as Paid
+              </Button>
+              <Button
+                width="100%"
+                colorScheme="yellow"
+                mb={2}
+                onClick={() => onSubmit(sale.id!, 'pending')}
+              >
+                Mark as Pending
+              </Button>
+              <Button
+                width="100%"
+                colorScheme="red"
+                onClick={() => onSubmit(sale.id!, 'cancelled')}
+              >
+                Mark as Cancelled
+              </Button>
+            </Box>
+          </VStack>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 const Sales: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -402,6 +456,7 @@ const Sales: React.FC = () => {
   const [sales, setSales] = useState<any[]>([]);
   const toast = useToast();
   const { currency } = useCurrency();
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
   useEffect(() => {
     loadSales();
@@ -457,6 +512,33 @@ const Sales: React.FC = () => {
       return 0;
     });
   }, [sales, sortConfig]);
+
+  const handleUpdatePaymentStatus = async (id: number, status: 'pending' | 'paid' | 'cancelled') => {
+    try {
+      const db = await initializeDatabase();
+      const ops = new SalesOperations(db);
+      await ops.updatePaymentStatus(id, status);
+      
+      await loadSales();
+      toast({
+        title: 'Success',
+        description: 'Payment status updated successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      setSelectedSale(null);
+    } catch (err) {
+      console.error('Failed to update payment status:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to update payment status',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
   return (
     <Box>
@@ -537,15 +619,19 @@ const Sales: React.FC = () => {
                 <Td>{sale.project_name}</Td>
                 <Td isNumeric>{currency} {sale.total_price.toFixed(2)}</Td>
                 <Td>
-                  <Badge
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    leftIcon={<Icon as={CreditCardIcon} />}
                     colorScheme={
                       sale.payment_status === 'paid' ? 'green' :
                       sale.payment_status === 'pending' ? 'yellow' :
                       'red'
                     }
+                    onClick={() => setSelectedSale(sale)}
                   >
                     {sale.payment_status.toUpperCase()}
-                  </Badge>
+                  </Button>
                 </Td>
               </Tr>
             ))}
@@ -560,6 +646,14 @@ const Sales: React.FC = () => {
         }}
         onSaleComplete={loadSales}
       />
+      {selectedSale && (
+        <PaymentStatusModal
+          isOpen={selectedSale !== null}
+          onClose={() => setSelectedSale(null)}
+          sale={selectedSale}
+          onSubmit={handleUpdatePaymentStatus}
+        />
+      )}
     </Box>
   );
 };
