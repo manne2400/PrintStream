@@ -44,6 +44,19 @@ export interface Customer {
   created_at?: string;
 }
 
+export interface Settings {
+  id?: number;
+  printer_hourly_rate: number;
+  post_processing_cost: number;
+  currency: string;
+  company_name: string;
+  company_address: string;
+  company_phone: string;
+  company_email: string;
+  bank_details: string;
+  vat_id: string;
+}
+
 export class FilamentOperations {
   private db: Database
 
@@ -224,5 +237,37 @@ export class CustomerOperations {
 
   async deleteCustomer(id: number): Promise<void> {
     await this.db.run('DELETE FROM customers WHERE id = ?', [id]);
+  }
+}
+
+export class SettingsOperations {
+  private db: Database;
+
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async getSettings(): Promise<Settings> {
+    const settings = await this.db.get('SELECT * FROM settings LIMIT 1');
+    return settings || {
+      printer_hourly_rate: 100,
+      post_processing_cost: 100,
+      currency: 'DKK',
+      company_name: '',
+      company_address: '',
+      company_phone: '',
+      company_email: '',
+      bank_details: '',
+      vat_id: ''
+    };
+  }
+
+  async updateSettings(settings: Partial<Settings>): Promise<void> {
+    const updates = Object.keys(settings)
+      .map(key => `${key} = ?`)
+      .join(', ');
+    const values = Object.values(settings);
+    
+    await this.db.run(`UPDATE settings SET ${updates} WHERE id = 1`, values);
   }
 } 

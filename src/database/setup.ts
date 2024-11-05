@@ -133,6 +133,38 @@ const initializeDatabase = async (): Promise<Database> => {
     }
   }
 
+  // Tilføj settings tabel
+  await exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      printer_hourly_rate REAL DEFAULT 0,
+      post_processing_cost REAL DEFAULT 0,
+      currency TEXT DEFAULT 'DKK',
+      company_name TEXT,
+      company_address TEXT,
+      company_phone TEXT,
+      company_email TEXT,
+      bank_details TEXT,
+      vat_id TEXT
+    );
+  `);
+
+  // Indsæt standard indstillinger hvis tabellen er tom
+  const settingsCount = await get('SELECT COUNT(*) as count FROM settings');
+  if (settingsCount.count === 0) {
+    await exec(`
+      INSERT INTO settings (
+        printer_hourly_rate,
+        post_processing_cost,
+        currency
+      ) VALUES (
+        100,
+        100,
+        'DKK'
+      );
+    `);
+  }
+
   return { run, get, all, exec }
 }
 
