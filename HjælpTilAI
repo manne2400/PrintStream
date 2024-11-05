@@ -1,0 +1,13 @@
+# PrintStream - 3D Print Management System
+
+## Projekt Struktur
+Projektet er bygget med følgende teknologier og struktur:
+
+### Tech Stack
+- Frontend: React 18 med TypeScript
+- UI Framework: Chakra UI
+- Database: SQLite3
+- Desktop Framework: Electron
+- Build Tools: Webpack, Electron Builder
+
+### Mappe Struktur
