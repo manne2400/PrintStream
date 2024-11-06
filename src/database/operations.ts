@@ -231,6 +231,19 @@ export class ProjectOperations {
   async deleteProjectFilament(id: number): Promise<void> {
     await this.db.run('DELETE FROM project_filaments WHERE id = ?', [id]);
   }
+
+  async getProjectById(id: number): Promise<Project | null> {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        'SELECT * FROM projects WHERE id = ?',
+        [id],
+        (err, row) => {
+          if (err) reject(err);
+          resolve(row as Project || null);
+        }
+      );
+    });
+  }
 }
 
 export class CustomerOperations {
@@ -270,6 +283,19 @@ export class CustomerOperations {
 
   async deleteCustomer(id: number): Promise<void> {
     await this.db.run('DELETE FROM customers WHERE id = ?', [id]);
+  }
+
+  async getCustomerById(id: number): Promise<Customer | null> {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        'SELECT * FROM customers WHERE id = ?',
+        [id],
+        (err, row) => {
+          if (err) reject(err);
+          resolve(row as Customer || null);
+        }
+      );
+    });
   }
 }
 

@@ -253,6 +253,22 @@ Databasen bruger SQLite3 med følgende tabeller:
 - status (TEXT)
 - created_at (DATETIME)
 
+### Print Jobs
+- id (PRIMARY KEY)
+- project_id (FOREIGN KEY)
+- customer_id (FOREIGN KEY)
+- date (TEXT)
+- quantity (INTEGER)
+- price_per_unit (REAL)
+- created_at (DATETIME)
+
+### Sales
+- id (PRIMARY KEY)
+- project_id (FOREIGN KEY)
+- amount (REAL)
+- date (DATETIME)
+- status (TEXT)
+
 ## Vigtige Filer og Deres Formål
 
 ### Electron Setup
