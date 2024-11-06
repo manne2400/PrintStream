@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, SimpleGrid, Flex, Text, Icon, Stat, StatLabel, StatNumber, StatHelpText,
   StatArrow, Table, Thead, Tbody, Tr, Th, Td, Badge
@@ -45,11 +45,33 @@ const Dashboard: React.FC = () => {
   const [salesChartData, setSalesChartData] = useState<any>(null);
   const [productChartData, setProductChartData] = useState<any>(null);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  // Opdater chart options
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false, // Dette er vigtigt for at kontrollere størrelsen
+    animation: {
+      duration: 0
+    },
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value: any) => `${currency} ${value}`
+        }
+      }
+    }
+  };
 
-  const loadDashboardData = async () => {
+  // Optimer data loading med useMemo
+  const loadDashboardData = useCallback(async () => {
     try {
       const db = await initializeDatabase();
       const salesOps = new SalesOperations(db);
@@ -100,13 +122,13 @@ const Dashboard: React.FC = () => {
       });
 
       // Forbered data til sales chart
-      const last7Days = Array.from({length: 7}, (_, i) => {
+      const last5Days = Array.from({length: 5}, (_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - i);
         return d.toISOString().split('T')[0];
       }).reverse();
 
-      const salesData = last7Days.map(date => {
+      const salesData = last5Days.map(date => {
         const daySales = sales.filter(s => s.sale_date.startsWith(date));
         return {
           date,
@@ -170,7 +192,24 @@ const Dashboard: React.FC = () => {
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     }
-  };
+  }, [currency]); // Tilføj currency som dependency
+
+  // Brug useEffect med cleanup
+  useEffect(() => {
+    let mounted = true;
+    
+    const loadData = async () => {
+      if (mounted) {
+        await loadDashboardData();
+      }
+    };
+    
+    loadData();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [loadDashboardData]);
 
   const getActivityBadge = (type: string) => {
     switch (type) {
@@ -283,58 +322,26 @@ const Dashboard: React.FC = () => {
       <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6} mb={6}>
         <Box bg="white" p={6} rounded="lg" shadow="sm">
           <Text fontSize="lg" fontWeight="medium" mb={4}>Sales Overview</Text>
-          {salesChartData && (
-            <Line
-              data={salesChartData}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                  title: {
-                    display: false
-                  }
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      callback: (value) => `${currency} ${value}`
-                    }
-                  }
-                }
-              }}
-            />
-          )}
+          <Box height="300px"> {/* Fast højde på container */}
+            {salesChartData && (
+              <Line
+                data={salesChartData}
+                options={chartOptions}
+              />
+            )}
+          </Box>
         </Box>
 
         <Box bg="white" p={6} rounded="lg" shadow="sm">
           <Text fontSize="lg" fontWeight="medium" mb={4}>Top Products Revenue</Text>
-          {productChartData && (
-            <Bar
-              data={productChartData}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                  title: {
-                    display: false
-                  }
-                },
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    ticks: {
-                      callback: (value) => `${currency} ${value}`
-                    }
-                  }
-                }
-              }}
-            />
-          )}
+          <Box height="300px"> {/* Fast højde på container */}
+            {productChartData && (
+              <Bar
+                data={productChartData}
+                options={chartOptions}
+              />
+            )}
+          </Box>
         </Box>
       </SimpleGrid>
 

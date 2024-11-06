@@ -172,28 +172,25 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
       const settings = await settingsOps.getSettings();
       const profitMargin = settings.profit_margin ?? 30;
       
-      // Beregn foreslået salgspris baseret på omkostninger og profit margin
-      const totalCost = costs.totalCost / printJob.quantity; // Omkostning per enhed
-      const suggestedPrice = totalCost * (1 + profitMargin / 100);
-      const expectedProfit = suggestedPrice - totalCost;
-      
-      setCostBreakdown({
-        materialCost: costs.materialCost / printJob.quantity,
-        printingCost: costs.printingCost / printJob.quantity,
-        postProcessingCost: costs.postProcessingCost / printJob.quantity,
-        extraCosts: costs.extraCosts / printJob.quantity,
-        totalCost,
-        suggestedPrice,
+      // VIGTIG ÆNDRING: Brug de faktiske omkostninger per enhed
+      const costBreakdown = {
+        materialCost: costs.materialCost,           // Allerede per enhed
+        printingCost: costs.printingCost,          // Allerede per enhed
+        postProcessingCost: costs.postProcessingCost, // Allerede per enhed
+        extraCosts: costs.extraCosts,              // Allerede per enhed
+        totalCost: costs.totalCost,                // Allerede per enhed
+        suggestedPrice: costs.totalCost * (1 + profitMargin / 100),
         profitMargin,
-        expectedProfit
-      });
+        expectedProfit: costs.totalCost * (profitMargin / 100)
+      };
       
-      // Sæt den foreslåede pris som standard
+      setCostBreakdown(costBreakdown);
+      
       setFormData(prev => ({
         ...prev,
         printJobId,
-        unitPrice: suggestedPrice,
-        quantity: 1 // Reset quantity når nyt print job vælges
+        unitPrice: costBreakdown.suggestedPrice,
+        quantity: 1
       }));
     } catch (err) {
       console.error('Failed to calculate costs:', err);
