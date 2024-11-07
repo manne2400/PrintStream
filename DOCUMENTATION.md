@@ -4,45 +4,46 @@
 PrintStream er et Electron-baseret desktop program til styring af 3D print virksomhed, udviklet med React, TypeScript og Chakra UI.
 
 ## 💻 Tech Stack
-| Kategori | Teknologi |
-|----------|-----------|
-| Frontend Framework | React 18 med TypeScript |
-| UI Library | Chakra UI |
-| Database | SQLite3 med lokalt filsystem |
-| Desktop Framework | Electron |
-| Build Tools | Webpack, Electron Builder |
-| State Management | React Hooks og Context |
-| Routing | React Router v6 med HashRouter |
+| Kategori            | Teknologi                      |
+|---------------------|--------------------------------|
+| Frontend Framework  | React 18 med TypeScript        |
+| UI Library          | Chakra UI                      |
+| Database            | SQLite3 med lokalt filsystem   |
+| Desktop Framework   | Electron                       |
+| Build Tools         | Webpack, Electron Builder      |
+| State Management    | React Hooks og Context         |
+| Routing             | React Router v6 med HashRouter |
 
 ## 📁 Project Structure
+
 ### Core Files
-package.json - Project dependencies og scripts
-webpack.config.js - Webpack configuration
-tsconfig.json - TypeScript configuration
-.babelrc - Babel configuration
-DOCUMENTATION.md - Denne dokumentation
+- `package.json` - Project dependencies og scripts
+- `webpack.config.js` - Webpack configuration
+- `tsconfig.json` - TypeScript configuration
+- `.babelrc` - Babel configuration
+- `DOCUMENTATION.md` - Denne dokumentation
 
-## 📁 Source Code (/src)
-### Components
-components/Layout.tsx - Main application layout
-components/Header.tsx - Top navigation bar
-components/Sidebar.tsx - Side navigation menu
+### 📁 Source Code (/src)
+#### Components
+- `components/Layout.tsx` - Main application layout
+- `components/Header.tsx` - Top navigation bar
+- `components/Sidebar.tsx` - Side navigation menu
 
-### Pages
-pages/Dashboard.tsx - Main dashboard
-pages/Filament.tsx - Filament management
-pages/PrintInventory.tsx - Print job management
-pages/Projects.tsx - Project tracking
-pages/Customers.tsx - Customer management
-pages/Sales.tsx - Sales tracking
-pages/Reports.tsx - Business analytics
-pages/Settings.tsx - Application settings
-pages/About.tsx - About page
+#### Pages
+- `pages/Dashboard.tsx` - Main dashboard
+- `pages/Filament.tsx` - Filament management
+- `pages/PrintInventory.tsx` - Print job management
+- `pages/Projects.tsx` - Project tracking
+- `pages/Customers.tsx` - Customer management
+- `pages/Sales.tsx` - Sales tracking
+- `pages/Reports.tsx` - Business analytics
+- `pages/Settings.tsx` - Application settings
+- `pages/About.tsx` - About page
 
-## 📁 Public Files (/public)
-electron.js - Electron main process
-index.html - HTML template
-manifest.json - Application manifest
+### 📁 Public Files (/public)
+- `electron.js` - Electron main process
+- `index.html` - HTML template
+- `manifest.json` - Application manifest
 
 ## 📁 Database Schema
 ### Filaments Table
@@ -236,38 +237,38 @@ Tjek database connection
 Databasen bruger SQLite3 med følgende tabeller:
 
 ### Filaments
-- id (PRIMARY KEY)
-- name (TEXT)
-- type (TEXT)
-- color (TEXT)
-- weight (REAL)
-- price (REAL)
-- stock (REAL)
-- ams_slot (INTEGER, nullable)
-- created_at (DATETIME)
+- `id` (PRIMARY KEY)
+- `name` (TEXT)
+- `type` (TEXT)
+- `color` (TEXT)
+- `weight` (REAL)
+- `price` (REAL)
+- `stock` (REAL)
+- `ams_slot` (INTEGER, nullable)
+- `created_at` (DATETIME)
 
 ### Projects
-- id (PRIMARY KEY)
-- name (TEXT)
-- description (TEXT)
-- status (TEXT)
-- created_at (DATETIME)
+- `id` (PRIMARY KEY)
+- `name` (TEXT)
+- `description` (TEXT)
+- `status` (TEXT)
+- `created_at` (DATETIME)
 
 ### Print Jobs
-- id (PRIMARY KEY)
-- project_id (FOREIGN KEY)
-- customer_id (FOREIGN KEY)
-- date (TEXT)
-- quantity (INTEGER)
-- price_per_unit (REAL)
-- created_at (DATETIME)
+- `id` (PRIMARY KEY)
+- `project_id` (FOREIGN KEY)
+- `customer_id` (FOREIGN KEY)
+- `date` (TEXT)
+- `quantity` (INTEGER)
+- `price_per_unit` (REAL)
+- `created_at` (DATETIME)
 
 ### Sales
-- id (PRIMARY KEY)
-- project_id (FOREIGN KEY)
-- amount (REAL)
-- date (DATETIME)
-- status (TEXT)
+- `id` (PRIMARY KEY)
+- `project_id` (FOREIGN KEY)
+- `amount` (REAL)
+- `date` (DATETIME)
+- `status` (TEXT)
 
 ## Vigtige Filer og Deres Formål
 
@@ -285,8 +286,7 @@ Databasen bruger SQLite3 med følgende tabeller:
 - CRUD operationer i `operations.ts`
 - Bruger Electron IPC for filsti håndtering
 
-### Hovedmappestruktur
-/
+### Hovedmappestruktur/
 ├── src/
 │   ├── components/
 │   │   ├── Layout.tsx
@@ -328,3 +328,55 @@ Databasen bruger SQLite3 med følgende tabeller:
     ├── tsconfig.json
     ├── .babelrc
     └── DOCUMENTATION.md
+
+## 🔑 License Key Generation
+
+### License Key Format
+- Format: `XXXX-YYYY-ZZZZ-WWWW`
+  - `XXXX`: Hash af kundeID
+  - `YYYY`: Antal dage krypteret
+  - `ZZZZ-WWWW`: Validerings checksum
+
+### License Key Generation
+- Funktion: `generateLicenseKey(days: number, customerId: string): string`
+  - `days`: Antal dage licensen er gyldig
+  - `customerId`: Unikt ID for kunden
+
+### License Key Validation
+- Funktion: `validateLicenseKey(key: string): { isValid: boolean, days?: number }`
+  - Validerer nøglen og dekrypterer antal dage
+
+### Hjælpefunktioner
+- `hashString(str: string): string`: Genererer en hash fra en streng
+- `encodeDays(days: number): string`: Krypterer antal dage
+- `decodeDays(encoded: string): number`: Dekrypterer antal dage
+- `generateChecksum(str: string): string`: Genererer en checksum for validering
+
+### License Administration
+- Licensnøgler genereres og administreres via et Express-baseret API
+- Licenshistorik gemmes i en JSON-fil (`licenses.json`) i `license-admin` projektet
+- Licensnøgler kan genereres via en webgrænseflade (`index.html` i `license-admin/src/public`)
+
+
+Build Process
+Development: npm run dev - Starter udviklingsserveren med hot-reloading.
+Production: npm run build - Bygger applikationen til produktion.
+Packaging: npm run dist - Pakker applikationen til distribution.
+Error Handling
+Database Validering: Sørg for at alle database operationer håndterer fejl korrekt.
+Transaction Rollback: Implementer rollback for at sikre data integritet ved fejl.
+UI Error States: Vis brugervenlige fejlmeddelelser i UI.
+Logging System: Brug et logging system til at spore fejl og advarsler.
+Common Issues & Solutions
+SQLite3 Bindings Error: Kør npm run rebuild for at genopbygge native moduler.
+Blank Screen: Tjek console (Ctrl+Shift+I) for fejl og verificer webpack build.
+Database Errors: Tjek filrettigheder og SQL forespørgsler.
+License Admin Tool
+Installation: Kør npm install i license-admin mappen.
+Start: Kør npm start for at starte værktøjet.
+Port: Værktøjet kører på port 3000 som standard.
+License Key Management
+Generering: Brug generateLicenseKey funktionen til at oprette nøgler.
+Validering: Brug validateLicenseKey til at sikre gyldighed.
+Opbevaring: Licensnøgler gemmes i licenses.json.
+Disse punkter kan hjælpe med at sikre en glat udviklings- og vedligeholdelsesproces. Hvis der er noget specifikt du vil have uddybet, så lad mig vide det!
