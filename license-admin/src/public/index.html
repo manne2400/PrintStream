@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PrintStream License Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .history {
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>PrintStream License Generator</h1>
+  
+  <div class="form-group">
+    <label for="customerId">Kunde ID:</label>
+    <input type="text" id="customerId" required>
+  </div>
+  
+  <div class="form-group">
+    <label for="days">Licens Periode:</label>
+    <select id="days">
+      <option value="30">30 dage</option>
+      <option value="90">90 dage</option>
+      <option value="180">180 dage</option>
+      <option value="365">1 år</option>
+    </select>
+  </div>
+  
+  <button onclick="generateLicense()">Generer Licensnøgle</button>
+  
+  <div id="result" class="result" style="display: none;">
+    <h3>Genereret Licensnøgle:</h3>
+    <p id="licenseKey"></p>
+  </div>
+  
+  <div class="history">
+    <h3>Historik</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Dato</th>
+          <th>Kunde ID</th>
+          <th>Periode</th>
+          <th>Licensnøgle</th>
+        </tr>
+      </thead>
+      <tbody id="historyBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function generateLicense() {
+      const customerId = document.getElementById('customerId').value;
+      const days = document.getElementById('days').value;
+      
+      if (!customerId) {
+        alert('Indtast venligst et kunde ID');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ customerId, days }),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('result').style.display = 'block';
+          document.getElementById('licenseKey').textContent = data.licenseKey;
+          
+          // Tilføj til historik
+          addToHistory(customerId, days, data.licenseKey);
+        } else {
+          alert('Fejl ved generering af licensnøgle');
+        }
+      } catch (error) {
+        alert('Der opstod en fejl');
+      }
+    }
+    
+    function addToHistory(customerId, days, licenseKey) {
+      const table = document.getElementById('historyBody');
+      const row = table.insertRow(0);
+      
+      row.insertCell(0).textContent = new Date().toLocaleString();
+      row.insertCell(1).textContent = customerId;
+      row.insertCell(2).textContent = days + ' dage';
+      row.insertCell(3).textContent = licenseKey;
+    }
+  </script>
+</body>
+</html> 

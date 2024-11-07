@@ -1,7 +1,7 @@
 {
   "name": "printstream",
   "productName": "PrintStream",
-  "version": "1.0.0",
+  "version": "0.2.5",
   "description": "3D Print Management System",
   "main": "build/electron.js",
   "scripts": {
@@ -25,7 +25,6 @@
     "chart.js": "^4.4.0",
     "electron-is-dev": "^2.0.0",
     "framer-motion": "^10.18.0",
-    "printstream": "file:",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
@@ -56,17 +55,33 @@
     "webpack-cli": "^5.1.4"
   },
   "build": {
-    "appId": "com.printstream",
+    "appId": "com.printstream.app",
     "productName": "PrintStream",
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/icon.ico"
+    },
     "files": [
-      "build/**/*"
+      "build/**/*",
+      "node_modules/**/*",
+      "LICENSE.md"
     ],
     "directories": {
       "buildResources": "assets",
       "output": "dist"
     },
-    "win": {
-      "target": "nsis"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "license": "LICENSE.md",
+      "installerIcon": "src/assets/icon.ico",
+      "uninstallerIcon": "src/assets/icon.ico",
+      "installerHeaderIcon": "src/assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PrintStream",
+      "perMachine": false,
+      "runAfterFinish": true
     }
   }
 }
