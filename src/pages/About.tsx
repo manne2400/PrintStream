@@ -137,7 +137,7 @@ const About: React.FC = () => {
           <Heading size="md" mb={3}>Version</Heading>
           <Text>PrintStream version 0.2.0b</Text>
           <Text fontSize="sm" color="gray.500">
-            Developed by Jacob Manscher
+            Developed by Jacob M (M4NN3DK)
           </Text>
         </Box>
       </VStack>

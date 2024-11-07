@@ -93,7 +93,7 @@ const Sidebar: React.FC = () => {
         <Flex align="center">
           <Avatar size="sm" name="Jacob Manscher" bg="gray.600" color="white" />
           <Box ml="3">
-            <Text fontSize="sm" fontWeight="medium" color="white">Jacob Manscher</Text>
+            <Text fontSize="sm" fontWeight="medium" color="white">Coming later!</Text>
             <Text fontSize="xs" color="gray.400">Admin</Text>
           </Box>
         </Flex>
