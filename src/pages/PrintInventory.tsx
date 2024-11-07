@@ -17,6 +17,7 @@ import { useCurrency } from '../context/CurrencyContext';
 interface PrintJobFormData {
   projectId: number;
   quantity: number;
+  status: PrintStatus;
 }
 
 interface CostBreakdown {
@@ -34,6 +35,7 @@ interface GroupedPrintJob {
   customer_name?: string;
   date: string;
   total_quantity: number;
+  status: PrintStatus;
   prints: PrintJob[];
 }
 
@@ -42,6 +44,9 @@ interface SortConfig {
   key: keyof PrintJob;
   direction: 'asc' | 'desc';
 }
+
+// Tilføj PrintStatus type
+type PrintStatus = 'pending' | 'printing' | 'completed' | 'cancelled';
 
 const PrintInventory: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -52,7 +57,8 @@ const PrintInventory: React.FC = () => {
 
   const [formData, setFormData] = useState<PrintJobFormData>({
     projectId: 0,
-    quantity: 1
+    quantity: 1,
+    status: 'pending'
   });
 
   const [printJobs, setPrintJobs] = useState<Array<PrintJob & { project_name?: string, customer_name?: string }>>([]);
@@ -65,6 +71,24 @@ const PrintInventory: React.FC = () => {
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'project_id', direction: 'asc' });
 
   const { currency } = useCurrency();
+
+  // Tilføj status farver og labels
+  const statusColors: Record<PrintStatus, string> = {
+    pending: 'yellow.500',
+    printing: 'blue.500',
+    completed: 'green.500',
+    cancelled: 'red.500'
+  };
+
+  const statusLabels: Record<PrintStatus, string> = {
+    pending: 'Pending',
+    printing: 'Printing',
+    completed: 'Completed',
+    cancelled: 'Cancelled'
+  };
+
+  // Tilføj ny state for status modal
+  const [statusModalData, setStatusModalData] = useState<PrintJob | null>(null);
 
   useEffect(() => {
     loadProjects();
@@ -143,6 +167,7 @@ const PrintInventory: React.FC = () => {
         customer_id: null,
         date: new Date().toISOString().split('T')[0],
         quantity: formData.quantity,
+        status: formData.status,
         price_per_unit: 0 // Pris sættes ved salg
       });
 
@@ -175,7 +200,8 @@ const PrintInventory: React.FC = () => {
       setIsOpen(false);
       setFormData({
         projectId: 0,
-        quantity: 1
+        quantity: 1,
+        status: 'pending'
       });
       setCostBreakdown(null);
     } catch (err) {
@@ -207,6 +233,36 @@ const PrintInventory: React.FC = () => {
       });
     }
   };
+
+  // Tilføj denne funktion sammen med de andre handler funktioner (omkring linje 237, før handleEdit)
+const handleStatusChange = async (id: number, newStatus: PrintStatus) => {
+  try {
+    const db = await initializeDatabase();
+    const ops = new PrintJobOperations(db);
+    
+    await ops.updatePrintJob(id, { status: newStatus });
+    await loadPrintJobs(); // Genindlæs print jobs
+    
+    toast({
+      title: 'Status Updated',
+      description: `Print job status changed to ${statusLabels[newStatus]}`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+    
+    setStatusModalData(null); // Luk modalen
+  } catch (err) {
+    console.error('Failed to update status:', err);
+    toast({
+      title: 'Error',
+      description: 'Failed to update print job status',
+      status: 'error',
+      duration: 5000,
+      isClosable: true,
+    });
+  }
+};
 
   // Tilføj handleEdit funktion
   const handleEdit = async (id: number, updates: Partial<PrintJob>) => {
@@ -286,6 +342,7 @@ const PrintInventory: React.FC = () => {
           customer_name: job.customer_name,
           date: job.date,
           total_quantity: 0,
+          status: job.status,
           prints: []
         };
       }
@@ -395,7 +452,11 @@ const PrintInventory: React.FC = () => {
                   Quantity {renderSortIcon('quantity')}
                 </Flex>
               </Th>
-              <Th>Status</Th>
+              <Th cursor="pointer" onClick={() => handleSort('status')}>
+                <Flex align="center">
+                  Status {renderSortIcon('status')}
+                </Flex>
+              </Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -405,7 +466,11 @@ const PrintInventory: React.FC = () => {
                 <Td>{group.project_name}</Td>
                 <Td>{group.date}</Td>
                 <Td isNumeric>{group.total_quantity}</Td>
-                <Td>In Progress</Td>
+                <Td onClick={() => setStatusModalData(group.prints[0])} style={{ cursor: 'pointer' }}>
+                  <Text color={statusColors[group.status]} fontWeight="medium">
+                    {statusLabels[group.status]}
+                  </Text>
+                </Td>
                 <Td>
                   <Flex gap={2}>
                     <IconButton
@@ -466,6 +531,23 @@ const PrintInventory: React.FC = () => {
                     <NumberDecrementStepper />
                   </NumberInputStepper>
                 </NumberInput>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ 
+                    ...prev, 
+                    status: e.target.value as PrintStatus 
+                  }))}
+                >
+                  {Object.entries(statusLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
               </FormControl>
 
               {costBreakdown && (
@@ -554,6 +636,23 @@ const PrintInventory: React.FC = () => {
                     </NumberInputStepper>
                   </NumberInput>
                 </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel>Status</FormLabel>
+                  <Select
+                    value={editModalData.status}
+                    onChange={(e) => setEditModalData(prev => ({
+                      ...prev!,
+                      status: e.target.value as PrintStatus
+                    }))}
+                  >
+                    {Object.entries(statusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
               </VStack>
             </ModalBody>
             <ModalFooter>
@@ -589,6 +688,52 @@ const PrintInventory: React.FC = () => {
               </Button>
               <Button colorScheme="red" onClick={confirmDelete}>
                 Delete All
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {statusModalData && (
+        <Modal isOpen={statusModalData !== null} onClose={() => setStatusModalData(null)}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Update Print Status</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <VStack spacing={4}>
+                <Text>
+                  Current status: <Text as="span" color={statusColors[statusModalData.status]} fontWeight="bold">
+                    {statusLabels[statusModalData.status]}
+                  </Text>
+                </Text>
+                <FormControl>
+                  <FormLabel>New Status</FormLabel>
+                  <Select
+                    value={statusModalData.status}
+                    onChange={(e) => setStatusModalData(prev => ({
+                      ...prev!,
+                      status: e.target.value as PrintStatus
+                    }))}
+                  >
+                    {Object.entries(statusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="ghost" mr={3} onClick={() => setStatusModalData(null)}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="blue"
+                onClick={() => handleStatusChange(statusModalData.id!, statusModalData.status)}
+              >
+                Update Status
               </Button>
             </ModalFooter>
           </ModalContent>

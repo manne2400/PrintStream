@@ -179,7 +179,7 @@ const initializeDatabase = async (): Promise<Database> => {
     `);
   }
 
-  // Tilføj print_jobs tabel
+  // Opdater print_jobs tabel
   await exec(`
     CREATE TABLE IF NOT EXISTS print_jobs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -188,11 +188,25 @@ const initializeDatabase = async (): Promise<Database> => {
       date TEXT NOT NULL,
       quantity INTEGER NOT NULL,
       price_per_unit REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,
       FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE SET NULL
     );
   `);
+
+  // Tilføj status kolonne hvis den ikke findes
+  try {
+    await exec(`
+      ALTER TABLE print_jobs 
+      ADD COLUMN status TEXT NOT NULL DEFAULT 'pending';
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
 
   // Tilføj sales tabel med alle nødvendige felter
   await exec(`

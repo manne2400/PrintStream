@@ -64,6 +64,7 @@ export interface PrintJob {
   date: string;
   quantity: number;
   price_per_unit: number;
+  status: 'pending' | 'printing' | 'completed' | 'cancelled';
   created_at?: string;
 }
 
@@ -355,13 +356,14 @@ export class PrintJobOperations {
 
   async addPrintJob(printJob: Omit<PrintJob, 'id' | 'created_at'>): Promise<number> {
     const result = await this.db.run(
-      'INSERT INTO print_jobs (project_id, customer_id, date, quantity, price_per_unit) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO print_jobs (project_id, customer_id, date, quantity, price_per_unit, status) VALUES (?, ?, ?, ?, ?, ?)',
       [
         printJob.project_id,
         printJob.customer_id,
         printJob.date,
         printJob.quantity,
-        printJob.price_per_unit
+        printJob.price_per_unit,
+        printJob.status
       ]
     );
     return result.lastID;
