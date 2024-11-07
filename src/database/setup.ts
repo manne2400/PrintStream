@@ -243,7 +243,8 @@ const initializeDatabase = async (): Promise<Database> => {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       installation_date TEXT NOT NULL,
       expiry_date TEXT NOT NULL,
-      license_key TEXT
+      license_key TEXT,
+      installation_id TEXT
     );
   `);
 
@@ -258,6 +259,18 @@ const initializeDatabase = async (): Promise<Database> => {
         NULL
       );
     `);
+  }
+
+  // Tilføj installation_id kolonne hvis den ikke findes
+  try {
+    await exec(`
+      ALTER TABLE license ADD COLUMN installation_id TEXT;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
   }
 
   return { run, get, all, exec }

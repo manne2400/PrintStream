@@ -1,0 +1,229 @@
+[33mcommit bc416a882f876fa717b898ff05f7cdd729e37457[m[33m ([m[1;36mHEAD[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Thu Nov 7 15:25:18 2024 +0100
+
+    Backup af final version 0.2.5
+
+[33mcommit 63148521473a5d1b39d5ee80883f5dc253e61a44[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Thu Nov 7 14:30:53 2024 +0100
+
+    Version 0.2.3: License system and improvements
+
+[33mcommit 1c3a08e1a59500910667b08677775affd8d1ed6a[m[33m ([m[1;33mtag: [m[1;33mv0.2.5[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Sun Dec 8 12:38:22 2024 +0100
+
+    Version 0.2.3: Complete license system implementation
+    - Add license system with trial period and key validation
+    - Add license admin tool for generating license keys
+    - Add license expiry modal with Discord link
+    - Add gift option to sales
+    - Fix filament usage calculation in reports
+    - Fix active customers calculation
+    - Update print job status handling
+    - Add new utils folder with license validation
+
+[33mcommit 3b15bda533218c519b461f530677f3a0d3f46c59[m[33m ([m[1;33mtag: [m[1;33mv0.2.3[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Thu Nov 7 12:00:49 2024 +0100
+
+    Add gift option to sales and fix reports
+    - Add gift functionality to sales modal
+    - Fix filament usage calculation in reports
+    - Fix active customers calculation
+    - Update print job status handling
+    - Update database schema for NULL price_per_unit
+
+[33mcommit 7b179f7b055ab795fadc97fa51d81b26888847bb[m[33m ([m[1;33mtag: [m[1;33mv0.2.2[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Thu Nov 7 11:13:47 2024 +0100
+
+    Add print status functionality to PrintInventory
+    - Add status modal for changing print job status
+    - Implement handleStatusChange function
+    - Add status colors and labels
+    - Update database operations for status handling
+
+[33mcommit 136e616a6d965637c17ed44687cb3bb0b10455be[m[33m ([m[1;33mtag: [m[1;33mv0.2.1[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Thu Nov 7 10:51:55 2024 +0100
+
+    Version 0.2.1: Fixed router setup and database operations
+
+[33mcommit 62cd363b4b96dee618cf5d7e0191aac96e9b7170[m[33m ([m[1;33mtag: [m[1;33mv0.2.0b[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Wed Nov 6 19:18:23 2024 +0100
+
+    Version 0.2.0: Fixed cost calculations in sales module and improved dashboard
+
+[33mcommit beed610ed4e605b951d6444f0a5bb15b38862f54[m[33m ([m[1;33mtag: [m[1;33mv0.2.0[m[33m, [m[1;32mtemp_branch[m[33m, [m[1;32mtemp-work[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Wed Nov 6 18:48:18 2024 +0100
+
+    Version 0.2.0: Implementeret nyt dashboard med salgsstatistik og aktivitetsoversigt
+
+[33mcommit e89c68410294dbe50ff551c6dd3d64dd65a3dc7b[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 22:47:29 2024 +0100
+
+    index on backup1: 968f45b Opdateringer: - Oversat About siden til engelsk - Tilføjet detaljerede funktionsbeskrivelser - Opdateret version til 0.2.0b - Rettet currency fejl i Reports siden - Tilføjet unikke keys i tabeller - Tilføjet farve i Most Used Filaments
+
+[33mcommit 968f45b9c1bcb7ef8cbfc3b4af6b42db7f8b9368[m[33m ([m[1;32mbackup1[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 20:38:38 2024 +0100
+
+    Opdateringer:
+    - Oversat About siden til engelsk
+    - Tilføjet detaljerede funktionsbeskrivelser
+    - Opdateret version til 0.2.0b
+    - Rettet currency fejl i Reports siden
+    - Tilføjet unikke keys i tabeller
+    - Tilføjet farve i Most Used Filaments
+
+[33mcommit bfd13fcb5a65435b96838ff47a55c9c77d0fea2d[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 20:16:42 2024 +0100
+
+    Implementeret salgsside og opdateringer:
+    - Tilføjet grundlæggende salgsside med tabel og søgning
+    - Implementeret 'New Sale' modal med cost breakdown
+    - Tilføjet automatisk lagerstyring ved salg
+    - Opdateret currency system i hele appen
+    - Rettet SearchIcon til MagnifyingGlassIcon
+    - Tilføjet profit margin beregning fra settings
+    - Man kan skifte status Paid/Cansel/unPaid
+
+[33mcommit 7fb6f9bc21093223d30fcbf962999275a8a809a9[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 20:12:23 2024 +0100
+
+    Implementeret salgsside og opdateringer:
+    - Tilføjet grundlæggende salgsside med tabel og søgning
+    - Implementeret 'New Sale' modal med cost breakdown
+    - Tilføjet automatisk lagerstyring ved salg
+    - Opdateret currency system i hele appen
+    - Rettet SearchIcon til MagnifyingGlassIcon
+    - Tilføjet profit margin beregning fra settings
+
+[33mcommit 9a7e7565132658fdb0c8e15cfad8a9d022aa4bf3[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 19:46:26 2024 +0100
+
+    Implementeret grundlæggende salgsside med:
+    - Visning af salg i tabel
+    - Søgefunktion
+    - Sortering
+    - New Sale modal med:
+      - Print job valg
+      - Kunde valg
+      - Pris beregning
+      - Faktura nummer generering
+    - Database operationer for salg
+    -Fået appen til at virke med at trække ting fra lageret
+
+[33mcommit ac5d6684923ce1a34289d3c05f8b84b2bc928c35[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 19:36:34 2024 +0100
+
+    Implementeret grundlæggende salgsside med:
+    - Visning af salg i tabel
+    - Søgefunktion
+    - Sortering
+    - New Sale modal med:
+      - Print job valg
+      - Kunde valg
+      - Pris beregning
+      - Faktura nummer generering
+    - Database operationer for salg
+
+[33mcommit 1325d33a56eb445be6f03c172f511b1cb6b1e75b[m[33m ([m[1;31morigin/master[m[33m, [m[1;32mmaster[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 18:34:52 2024 +0100
+
+    Implementeret Settings opdateringer:
+    - Tilføjet profit margin til settings
+    - Opdateret database schema med profit_margin kolonne
+    - Tilføjet flere valutaer til currency selector
+    - Implementeret global valuta context
+    - Opdateret print job cost breakdown med valgt valuta
+    - Tilføjet standard profit margin på 30%
+
+[33mcommit d287498dd6d349dee2701b46cdfb7d86d56d59be[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 18:27:41 2024 +0100
+
+    Implementeret Settings system med:
+    - Tilføjet profit margin til settings
+    - Opdateret database schema med profit_margin kolonne
+    - Tilføjet standard profit margin på 30%
+    - Opdateret Settings interface og operationer
+    - Tilføjet profit margin til pricing settings UI
+
+[33mcommit fa9bf0df0ed8b8fdb175dc8674ee38be4a28dc1c[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 18:08:26 2024 +0100
+
+    Implementeret print job system med:
+    - Print job database struktur
+    - Automatisk beregning af omkostninger
+    - Gruppering af identiske prints
+    - Automatisk lagertræk ved print
+    - Real-time cost breakdown
+    - Opdateret dokumentation med nye funktioner
+    - Fjernet customer og date fra print jobs
+    - Rettet beregning af omkostninger ved flere prints
+
+[33mcommit 85c8cd9cc8f38e82ddd0c85150238e1774e0866e[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 17:19:12 2024 +0100
+
+    Implementeret settings system med:
+    - Pricing settings
+    - Company information
+    - Bank information
+    - Automatisk gem af indstillinger
+    - Default værdier
+    - Input validering
+
+[33mcommit 586328c737a367f30a889bd8455f3e06045daa3b[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 17:05:56 2024 +0100
+
+    Implementeret customer system med:
+    - Customer CRUD operationer
+    - Søgning og sortering
+    - Edit, Copy og Delete funktionalitet
+    - Kontaktperson felt
+    - Multiline adresse visning
+    - Forbedret UI/UX
+
+[33mcommit 98d4add01b29dfc0382bbb882388b80161846754[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 16:51:12 2024 +0100
+
+    Implementeret projekt system færdigt
+
+[33mcommit b892906e8d838db61a6fc4197c97c581c4c8f3d3[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 16:22:13 2024 +0100
+
+    Implementeret komplet filament system og startet på Projekt.
+
+[33mcommit d4e2af17967bb86207e6b16858dc50ffdaf11f5e[m[33m ([m[1;32mbackup[m[33m)[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 14:56:08 2024 +0100
+
+    Initial commit: Komplet filament system med søgning, sortering og notifikationer
+
+[33mcommit 81b7b6da8b020f4270a168b464b97a1ce751d42d[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 14:11:48 2024 +0100
+
+    Initial commit: Tilføjet projekt dokumentation og kodebase
+
+[33mcommit 3c26fc850a41de02faa76ab366e8fd10549ba984[m
+Author: 3D Print App <3dprintapp@local>
+Date:   Tue Nov 5 14:11:39 2024 +0100
+
+    Tilføjet .gitignore

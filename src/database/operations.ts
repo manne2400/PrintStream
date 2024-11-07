@@ -510,17 +510,70 @@ export class LicenseOperations {
   }
 
   async extendLicense(licenseKey: string): Promise<boolean> {
-    const validation = validateLicenseKey(licenseKey);
-    if (!validation.isValid || !validation.days) return false;
+    try {
+      // Tjek om licensen allerede er brugt
+      const usedLicense = await this.db.get(
+        'SELECT * FROM used_licenses WHERE license_key = ?',
+        [licenseKey]
+      );
+
+      if (usedLicense) {
+        console.log('License key already used');
+        return false;
+      }
+
+      const validation = validateLicenseKey(licenseKey);
+      if (!validation.isValid || !validation.days) {
+        console.log('Invalid license key');
+        return false;
+      }
+
+      // Gem licensen som brugt
+      const installationId = await this.getInstallationId();
+      await this.db.run(
+        `INSERT INTO used_licenses (
+          license_key, 
+          first_used_date, 
+          installation_id
+        ) VALUES (?, datetime('now'), ?)`,
+        [licenseKey, installationId]
+      );
+      
+      // Forlæng licensen
+      await this.db.run(`
+        UPDATE license 
+        SET expiry_date = datetime('now', '+${validation.days} days'),
+            license_key = ?
+        WHERE id = 1
+      `, [licenseKey]);
+      
+      return true;
+    } catch (err) {
+      console.error('Error extending license:', err);
+      return false;
+    }
+  }
+
+  private async getInstallationId(): Promise<string> {
+    const license = await this.db.get('SELECT installation_id FROM license WHERE id = 1');
+    if (license?.installation_id) {
+      return license.installation_id;
+    }
     
-    // Forlæng med det antal dage der er kodet i nøglen
-    await this.db.run(`
-      UPDATE license 
-      SET expiry_date = datetime('now', '+${validation.days} days'),
-          license_key = ?
-      WHERE id = 1
-    `, [licenseKey]);
-    
-    return true;
+    // Generer ny installations-id hvis den ikke findes
+    const newId = 'inst_' + Math.random().toString(36).substr(2, 9);
+    await this.db.run(
+      'UPDATE license SET installation_id = ? WHERE id = 1',
+      [newId]
+    );
+    return newId;
+  }
+
+  async getUsedLicenses(): Promise<Array<{
+    license_key: string;
+    first_used_date: string;
+    installation_id: string;
+  }>> {
+    return this.db.all('SELECT * FROM used_licenses ORDER BY first_used_date DESC');
   }
 } 
