@@ -7,7 +7,7 @@ import {
   StatArrow, Divider, Progress
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
-import { SalesOperations, PrintJobOperations, CustomerOperations, FilamentOperations } from '../database/operations';
+import { SalesOperations, PrintJobOperations, CustomerOperations, FilamentOperations, ProjectOperations } from '../database/operations';
 import { useCurrency } from '../context/CurrencyContext';
 
 interface SalesStats {
@@ -73,6 +73,8 @@ const Reports: React.FC = () => {
       const salesOps = new SalesOperations(db);
       const customerOps = new CustomerOperations(db);
       const filamentOps = new FilamentOperations(db);
+      const projectOps = new ProjectOperations(db);
+      const printJobOps = new PrintJobOperations(db);
       
       // Hent salgsdata som før...
       const sales = await salesOps.getAllSales();
@@ -133,31 +135,22 @@ const Reports: React.FC = () => {
 
       // Beregn kundestatistik
       const customers = await customerOps.getAllCustomers();
-      const activeCustomerIds = new Set(filteredSales.map(sale => sale.customer_id));
-      
-      // Beregn top kunder
-      const customerPurchases = filteredSales.reduce((acc, sale) => {
-        if (!sale.customer_id) return acc;
-        if (!acc[sale.customer_id]) {
-          acc[sale.customer_id] = {
-            name: sale.customer_name || 'Unknown',
-            total_purchases: 0,
-            total_spent: 0
-          };
-        }
-        acc[sale.customer_id].total_purchases++;
-        acc[sale.customer_id].total_spent += sale.total_price;
-        return acc;
-      }, {} as Record<string, { name: string; total_purchases: number; total_spent: number; }>);
+      const activeCustomerIds = new Set(
+        filteredSales
+          .filter(sale => sale.customer_id !== null)
+          .map(sale => sale.customer_id)
+      );
 
-      const topCustomers = Object.values(customerPurchases)
-        .sort((a, b) => b.total_spent - a.total_spent)
-        .slice(0, 5);
+      // Find unikke aktive kunde IDs fra de filtrerede salg
+      const actualActiveCustomers = customers.filter(customer => 
+        customer.id && activeCustomerIds.has(customer.id)
+      ).length;
 
+      // Opdater kundestatistik med korrekte tal
       setCustomerStats({
         totalCustomers: customers.length,
-        activeCustomers: activeCustomerIds.size,
-        topCustomers
+        activeCustomers: actualActiveCustomers,
+        topCustomers: customerStats.topCustomers // Behold eksisterende top kunder
       });
 
       // Beregn lagerstatistik
@@ -167,11 +160,30 @@ const Reports: React.FC = () => {
       const lowStockItems = filaments.filter(f => f.stock <= (f.low_stock_alert ?? 500)).length;
 
       // Beregn mest brugte filamenter
+      const printJobs = await printJobOps.getAllPrintJobs();
+      
+      // Opret map til at tracke filament forbrug
+      const filamentUsageMap = new Map<number, number>();
+      
+      // Beregn forbrug for hvert print job
+      for (const job of printJobs) {
+        const projectFilaments = await projectOps.getProjectFilaments(job.project_id);
+        
+        for (const pf of projectFilaments) {
+          const currentUsage = filamentUsageMap.get(pf.filament_id) || 0;
+          filamentUsageMap.set(
+            pf.filament_id, 
+            currentUsage + (pf.amount * job.quantity)
+          );
+        }
+      }
+      
+      // Kombiner med filament data
       const filamentUsage = filaments.map(f => ({
         name: f.name,
         type: f.type,
         color: f.color,
-        usage: f.weight - f.stock,
+        usage: filamentUsageMap.get(f.id!) || 0,
         stock: f.stock
       })).sort((a, b) => b.usage - a.usage).slice(0, 5);
 
@@ -287,7 +299,7 @@ const Reports: React.FC = () => {
                 <StatLabel>Active Customers</StatLabel>
                 <StatNumber>{customerStats.activeCustomers}</StatNumber>
                 <StatHelpText>
-                  {((customerStats.activeCustomers / customerStats.totalCustomers) * 100).toFixed(1)}% active
+                  {((customerStats.activeCustomers / customerStats.totalCustomers) * 100).toFixed(1)}% of total
                 </StatHelpText>
               </Stat>
             </CardBody>

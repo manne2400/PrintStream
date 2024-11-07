@@ -20,8 +20,8 @@ const Sidebar: React.FC = () => {
   const navigation = [
     { name: 'Dashboard', icon: HomeIcon, path: '/dashboard' },
     { name: 'Filament', icon: CubeIcon, path: '/filament' },
-    { name: 'Projects', icon: FolderIcon, path: '/projects' },
-    { name: 'Print/Inventory', icon: PrinterIcon, path: '/print-inventory' },
+    { name: 'Print Projects', icon: FolderIcon, path: '/projects' },
+    { name: 'Print Inventory', icon: PrinterIcon, path: '/print-inventory' },
     { name: 'Customers', icon: UserGroupIcon, path: '/customers' },
     { name: 'Sales', icon: ShoppingCartIcon, path: '/sales' },
     { name: 'Reports', icon: ChartBarIcon, path: '/reports' },

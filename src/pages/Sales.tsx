@@ -5,7 +5,7 @@ import {
   useToast, InputGroup, InputLeftElement, Input,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter,
   FormControl, FormLabel, Select, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper,
-  VStack, Textarea, Badge, Divider
+  VStack, Textarea, Badge, Divider, Checkbox
 } from '@chakra-ui/react';
 import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
@@ -44,15 +44,27 @@ interface PaymentStatusModalProps {
   onSubmit: (id: number, status: 'pending' | 'paid' | 'cancelled') => void;
 }
 
+interface SaleFormData {
+  printJobId: string;
+  customerId: string;
+  quantity: number;
+  unitPrice: number;
+  paymentDueDate: string;
+  notes: string;
+  isGift: boolean;
+  saleDate: string;
+}
+
 const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SaleFormData>({
     printJobId: '',
     customerId: '',
     quantity: 1,
     unitPrice: 0,
-    saleDate: new Date().toISOString().split('T')[0],
     paymentDueDate: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
-    notes: ''
+    notes: '',
+    isGift: false,
+    saleDate: new Date().toISOString().split('T')[0]
   });
   const [printJobs, setPrintJobs] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -113,11 +125,11 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
         invoice_number: invoiceNumber,
         sale_date: formData.saleDate,
         quantity: formData.quantity,
-        unit_price: formData.unitPrice,
-        total_price: formData.quantity * formData.unitPrice,
-        payment_status: 'pending',
+        unit_price: formData.isGift ? 0 : formData.unitPrice,
+        total_price: formData.isGift ? 0 : formData.unitPrice * formData.quantity,
+        payment_status: formData.isGift ? 'paid' : 'pending',
         payment_due_date: formData.paymentDueDate,
-        notes: formData.notes,
+        notes: formData.isGift ? `Gift - ${formData.notes}` : formData.notes,
         project_name: printJob.project_name,
         customer_name: customers.find(c => c.id === parseInt(formData.customerId))?.name || null,
         material_cost: costs.materialCost,
@@ -297,6 +309,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
                 onChange={(value) => setFormData(prev => ({ ...prev, unitPrice: parseFloat(value) }))}
                 min={0}
                 precision={2}
+                isDisabled={formData.isGift}
               >
                 <NumberInputField />
                 <NumberInputStepper>
@@ -331,6 +344,26 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Add any additional notes..."
               />
+            </FormControl>
+
+            <FormControl>
+              <Flex align="center">
+                <Checkbox
+                  isChecked={formData.isGift}
+                  onChange={(e) => {
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      isGift: e.target.checked,
+                      unitPrice: e.target.checked ? 0 : costBreakdown?.suggestedPrice || 0
+                    }));
+                  }}
+                >
+                  Mark as Gift
+                </Checkbox>
+                <Text ml={2} fontSize="sm" color="gray.500">
+                  No payment will be required
+                </Text>
+              </Flex>
             </FormControl>
 
             {costBreakdown && (
@@ -389,7 +422,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
           <Button 
             colorScheme="blue" 
             onClick={handleSubmit}
-            isDisabled={!formData.printJobId || formData.unitPrice <= 0}
+            isDisabled={!formData.printJobId || (!formData.isGift && formData.unitPrice <= 0)}
           >
             Create Sale
           </Button>

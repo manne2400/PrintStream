@@ -187,7 +187,7 @@ const initializeDatabase = async (): Promise<Database> => {
       customer_id INTEGER,
       date TEXT NOT NULL,
       quantity INTEGER NOT NULL,
-      price_per_unit REAL NOT NULL,
+      price_per_unit REAL,
       status TEXT NOT NULL DEFAULT 'pending',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE,

@@ -234,35 +234,34 @@ const PrintInventory: React.FC = () => {
     }
   };
 
-  // Tilføj denne funktion sammen med de andre handler funktioner (omkring linje 237, før handleEdit)
-const handleStatusChange = async (id: number, newStatus: PrintStatus) => {
-  try {
-    const db = await initializeDatabase();
-    const ops = new PrintJobOperations(db);
-    
-    await ops.updatePrintJob(id, { status: newStatus });
-    await loadPrintJobs(); // Genindlæs print jobs
-    
-    toast({
-      title: 'Status Updated',
-      description: `Print job status changed to ${statusLabels[newStatus]}`,
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    });
-    
-    setStatusModalData(null); // Luk modalen
-  } catch (err) {
-    console.error('Failed to update status:', err);
-    toast({
-      title: 'Error',
-      description: 'Failed to update print job status',
-      status: 'error',
-      duration: 5000,
-      isClosable: true,
-    });
-  }
-};
+  const handleStatusChange = async (id: number, newStatus: PrintStatus) => {
+    try {
+      const db = await initializeDatabase();
+      const ops = new PrintJobOperations(db);
+      
+      await ops.updatePrintJob(id, { status: newStatus });
+      await loadPrintJobs(); // Genindlæs print jobs
+      
+      toast({
+        title: 'Status Updated',
+        description: `Print job status changed to ${statusLabels[newStatus]}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      setStatusModalData(null); // Luk modalen
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to update print job status',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
 
   // Tilføj handleEdit funktion
   const handleEdit = async (id: number, updates: Partial<PrintJob>) => {
