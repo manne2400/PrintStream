@@ -3,13 +3,13 @@ import {
   Box, Heading, Text, VStack, FormControl, FormLabel,
   Input, NumberInput, NumberInputField, NumberInputStepper,
   NumberIncrementStepper, NumberDecrementStepper,
-  Select, Button, useToast, Divider, Textarea, useColorMode, Switch, Icon, Flex
+  Select, Button, useToast, Divider, Textarea, useColorMode, Switch, Icon, Flex, Grid
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
 import { SettingsOperations, Settings as SettingsType, LicenseOperations } from '../database/operations';
 import { useCurrency } from '../context/CurrencyContext';
 import { ipcRenderer } from 'electron';
-import { DownloadIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { DownloadIcon, ArrowUpTrayIcon, CurrencyDollarIcon, BuildingOfficeIcon, BanknotesIcon, KeyIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 const Settings: React.FC = () => {
   const toast = useToast();
@@ -273,227 +273,260 @@ const Settings: React.FC = () => {
 
   return (
     <Box p={4}>
-      <VStack spacing={8} align="stretch">
-        {/* Pricing Settings */}
-        <Box variant="stats-card">
-          <Heading size="md" mb={4}>Pricing Settings</Heading>
-          <VStack spacing={4} align="stretch">
-            <FormControl>
-              <FormLabel>Printer Hourly Rate</FormLabel>
-              <NumberInput
-                value={settings.printer_hourly_rate}
-                onChange={(value) => setSettings(prev => ({ ...prev, printer_hourly_rate: parseFloat(value) }))}
-                min={0}
-                precision={2}
+      <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap={6}>
+        {/* Venstre kolonne */}
+        <VStack spacing={6} align="stretch">
+          {/* Pricing Settings */}
+          <Box variant="stats-card">
+            <Flex align="center" mb={6}>
+              <Icon as={CurrencyDollarIcon} boxSize={6} color="blue.500" mr={4} />
+              <Box>
+                <Heading size="md">Pricing Settings</Heading>
+                <Text fontSize="sm" color="gray.500">Configure your pricing and profit margins</Text>
+              </Box>
+            </Flex>
+            <VStack spacing={4} align="stretch">
+              <FormControl>
+                <FormLabel>Printer Hourly Rate</FormLabel>
+                <NumberInput
+                  value={settings.printer_hourly_rate}
+                  onChange={(value) => setSettings(prev => ({ ...prev, printer_hourly_rate: parseFloat(value) }))}
+                  min={0}
+                  precision={2}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Post Processing Cost</FormLabel>
+                <NumberInput
+                  value={settings.post_processing_cost}
+                  onChange={(value) => setSettings(prev => ({ ...prev, post_processing_cost: parseFloat(value) }))}
+                  min={0}
+                  precision={2}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Default Profit Margin (%)</FormLabel>
+                <NumberInput
+                  value={settings.profit_margin}
+                  onChange={(value) => setSettings(prev => ({ ...prev, profit_margin: parseFloat(value) }))}
+                  min={0}
+                  max={100}
+                  precision={1}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  This percentage will be used to calculate suggested selling prices
+                </Text>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Currency</FormLabel>
+                <Select
+                  value={settings.currency}
+                  onChange={(e) => handleCurrencyChange(e.target.value)}
+                >
+                  {CURRENCIES.map(currency => (
+                    <option key={currency.code} value={currency.code}>
+                      {currency.code} - {currency.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            </VStack>
+          </Box>
+
+          {/* Bank Information */}
+          <Box variant="stats-card">
+            <Flex align="center" mb={6}>
+              <Icon as={BanknotesIcon} boxSize={6} color="green.500" mr={4} />
+              <Box>
+                <Heading size="md">Bank Information</Heading>
+                <Text fontSize="sm" color="gray.500">Configure payment details</Text>
+              </Box>
+            </Flex>
+            <VStack spacing={4} align="stretch">
+              <FormControl>
+                <FormLabel>Banking Details</FormLabel>
+                <Textarea
+                  value={settings.bank_details}
+                  onChange={(e) => setSettings(prev => ({ ...prev, bank_details: e.target.value }))}
+                  placeholder="Enter bank account details for customer payments"
+                  rows={3}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>VAT ID</FormLabel>
+                <Input
+                  value={settings.vat_id}
+                  onChange={(e) => setSettings(prev => ({ ...prev, vat_id: e.target.value }))}
+                />
+              </FormControl>
+            </VStack>
+          </Box>
+
+          {/* License Information */}
+          <Box variant="stats-card">
+            <Flex align="center" mb={6}>
+              <Icon as={KeyIcon} boxSize={6} color="yellow.500" mr={4} />
+              <Box>
+                <Heading size="md">License Information</Heading>
+                <Text fontSize="sm" color="gray.500">Manage your software license</Text>
+              </Box>
+            </Flex>
+            <VStack align="stretch" spacing={4}>
+              <Text>Days Remaining: {licenseInfo.daysLeft}</Text>
+              <Text>Expiry Date: {new Date(licenseInfo.expiryDate).toLocaleDateString()}</Text>
+              <FormControl>
+                <FormLabel>Enter License Key</FormLabel>
+                <Input
+                  value={newLicenseKey}
+                  onChange={(e) => setNewLicenseKey(e.target.value)}
+                  placeholder="Enter your license key"
+                />
+              </FormControl>
+              <Button
+                colorScheme="blue"
+                onClick={handleLicenseSubmit}
+                isDisabled={!newLicenseKey}
               >
-                <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
-            </FormControl>
+                Apply License Key
+              </Button>
+            </VStack>
+          </Box>
+        </VStack>
 
-            <FormControl>
-              <FormLabel>Post Processing Cost</FormLabel>
-              <NumberInput
-                value={settings.post_processing_cost}
-                onChange={(value) => setSettings(prev => ({ ...prev, post_processing_cost: parseFloat(value) }))}
-                min={0}
-                precision={2}
-              >
-                <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
-            </FormControl>
+        {/* Højre kolonne */}
+        <VStack spacing={6} align="stretch">
+          {/* Company Information */}
+          <Box variant="stats-card">
+            <Flex align="center" mb={6}>
+              <Icon as={BuildingOfficeIcon} boxSize={6} color="purple.500" mr={4} />
+              <Box>
+                <Heading size="md">Company Information</Heading>
+                <Text fontSize="sm" color="gray.500">Manage your business details</Text>
+              </Box>
+            </Flex>
+            <VStack spacing={4} align="stretch">
+              <FormControl>
+                <FormLabel>Company Name</FormLabel>
+                <Input
+                  value={settings.company_name}
+                  onChange={(e) => setSettings(prev => ({ ...prev, company_name: e.target.value }))}
+                />
+              </FormControl>
 
-            <FormControl>
-              <FormLabel>Default Profit Margin (%)</FormLabel>
-              <NumberInput
-                value={settings.profit_margin}
-                onChange={(value) => setSettings(prev => ({ ...prev, profit_margin: parseFloat(value) }))}
-                min={0}
-                max={100}
-                precision={1}
-              >
-                <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
-              <Text fontSize="sm" color="gray.500" mt={1}>
-                This percentage will be used to calculate suggested selling prices
-              </Text>
-            </FormControl>
+              <FormControl>
+                <FormLabel>Company Address</FormLabel>
+                <Textarea
+                  value={settings.company_address}
+                  onChange={(e) => setSettings(prev => ({ ...prev, company_address: e.target.value }))}
+                  rows={3}
+                />
+              </FormControl>
 
-            <FormControl>
-              <FormLabel>Currency</FormLabel>
-              <Select
-                value={settings.currency}
-                onChange={(e) => handleCurrencyChange(e.target.value)}
-              >
-                {CURRENCIES.map(currency => (
-                  <option key={currency.code} value={currency.code}>
-                    {currency.code} - {currency.name}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
-          </VStack>
-        </Box>
+              <FormControl>
+                <FormLabel>Company Phone</FormLabel>
+                <Input
+                  value={settings.company_phone}
+                  onChange={(e) => setSettings(prev => ({ ...prev, company_phone: e.target.value }))}
+                />
+              </FormControl>
 
-        <Divider />
+              <FormControl>
+                <FormLabel>Company Email</FormLabel>
+                <Input
+                  type="email"
+                  value={settings.company_email}
+                  onChange={(e) => setSettings(prev => ({ ...prev, company_email: e.target.value }))}
+                />
+              </FormControl>
+            </VStack>
+          </Box>
 
-        {/* Company Information */}
-        <Box variant="stats-card">
-          <Heading size="md" mb={4}>Company Information</Heading>
-          <VStack spacing={4} align="stretch">
-            <FormControl>
-              <FormLabel>Company Name</FormLabel>
-              <Input
-                value={settings.company_name}
-                onChange={(e) => setSettings(prev => ({ ...prev, company_name: e.target.value }))}
-              />
-            </FormControl>
+          {/* Appearance & Backup */}
+          <Box variant="stats-card">
+            <Flex align="center" mb={6}>
+              <Icon as={Cog6ToothIcon} boxSize={6} color="orange.500" mr={4} />
+              <Box>
+                <Heading size="md">Appearance & Backup</Heading>
+                <Text fontSize="sm" color="gray.500">Customize appearance and manage backups</Text>
+              </Box>
+            </Flex>
+            <VStack spacing={4} align="stretch">
+              <FormControl display="flex" alignItems="center">
+                <FormLabel htmlFor="dark-mode" mb="0">
+                  Dark Mode
+                </FormLabel>
+                <Switch
+                  id="dark-mode"
+                  isChecked={colorMode === 'dark'}
+                  onChange={toggleColorMode}
+                />
+              </FormControl>
 
-            <FormControl>
-              <FormLabel>Company Address</FormLabel>
-              <Textarea
-                value={settings.company_address}
-                onChange={(e) => setSettings(prev => ({ ...prev, company_address: e.target.value }))}
-                rows={3}
-              />
-            </FormControl>
+              <Divider />
 
-            <FormControl>
-              <FormLabel>Company Phone</FormLabel>
-              <Input
-                value={settings.company_phone}
-                onChange={(e) => setSettings(prev => ({ ...prev, company_phone: e.target.value }))}
-              />
-            </FormControl>
+              <FormControl display="flex" alignItems="center">
+                <FormLabel htmlFor="auto-backup" mb="0">
+                  Auto Backup on Startup
+                </FormLabel>
+                <Switch
+                  id="auto-backup"
+                  isChecked={autoBackup}
+                  onChange={handleAutoBackupChange}
+                />
+              </FormControl>
 
-            <FormControl>
-              <FormLabel>Company Email</FormLabel>
-              <Input
-                type="email"
-                value={settings.company_email}
-                onChange={(e) => setSettings(prev => ({ ...prev, company_email: e.target.value }))}
-              />
-            </FormControl>
-          </VStack>
-        </Box>
+              <Flex gap={2}>
+                <Button
+                  leftIcon={<Icon as={DownloadIcon} />}
+                  onClick={handleBackup}
+                  colorScheme="blue"
+                  variant="outline"
+                  flex="1"
+                >
+                  Create Backup
+                </Button>
+                
+                <Button
+                  leftIcon={<Icon as={ArrowUpTrayIcon} />}
+                  onClick={handleRestore}
+                  colorScheme="blue"
+                  variant="outline"
+                  flex="1"
+                >
+                  Restore Backup
+                </Button>
+              </Flex>
+            </VStack>
+          </Box>
 
-        <Divider />
-
-        {/* Bank Information */}
-        <Box variant="stats-card">
-          <Heading size="md" mb={4}>Bank Information</Heading>
-          <VStack spacing={4} align="stretch">
-            <FormControl>
-              <FormLabel>Banking Details</FormLabel>
-              <Textarea
-                value={settings.bank_details}
-                onChange={(e) => setSettings(prev => ({ ...prev, bank_details: e.target.value }))}
-                placeholder="Enter bank account details for customer payments"
-                rows={3}
-              />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>VAT ID</FormLabel>
-              <Input
-                value={settings.vat_id}
-                onChange={(e) => setSettings(prev => ({ ...prev, vat_id: e.target.value }))}
-              />
-            </FormControl>
-          </VStack>
-        </Box>
-
-        <Box variant="stats-card">
-          <Heading size="md" mb={4}>License Information</Heading>
-          <VStack align="stretch" spacing={4}>
-            <Text>Days Remaining: {licenseInfo.daysLeft}</Text>
-            <Text>Expiry Date: {new Date(licenseInfo.expiryDate).toLocaleDateString()}</Text>
-            <FormControl>
-              <FormLabel>Enter License Key</FormLabel>
-              <Input
-                value={newLicenseKey}
-                onChange={(e) => setNewLicenseKey(e.target.value)}
-                placeholder="Enter your license key"
-              />
-            </FormControl>
-            <Button
-              colorScheme="blue"
-              onClick={handleLicenseSubmit}
-              isDisabled={!newLicenseKey}
-            >
-              Apply License Key
-            </Button>
-          </VStack>
-        </Box>
-
-        <Box pt={4}>
-          <Button colorScheme="blue" onClick={handleSave}>
+          {/* Save Button */}
+          <Button colorScheme="blue" onClick={handleSave} size="lg">
             Save Settings
           </Button>
-        </Box>
-
-        <Box variant="stats-card">
-          <Heading size="md" mb={4}>Appearance & Backup</Heading>
-          <VStack spacing={4} align="stretch">
-            <FormControl display="flex" alignItems="center">
-              <FormLabel htmlFor="dark-mode" mb="0">
-                Dark Mode
-              </FormLabel>
-              <Switch
-                id="dark-mode"
-                isChecked={colorMode === 'dark'}
-                onChange={toggleColorMode}
-              />
-            </FormControl>
-
-            <Divider />
-
-            <FormControl display="flex" alignItems="center">
-              <FormLabel htmlFor="auto-backup" mb="0">
-                Auto Backup on Startup
-              </FormLabel>
-              <Switch
-                id="auto-backup"
-                isChecked={autoBackup}
-                onChange={handleAutoBackupChange}
-              />
-            </FormControl>
-
-            <Flex gap={2}>
-              <Button
-                leftIcon={<Icon as={DownloadIcon} />}
-                onClick={handleBackup}
-                colorScheme="blue"
-                variant="outline"
-                flex="1"
-              >
-                Create Backup
-              </Button>
-              
-              <Button
-                leftIcon={<Icon as={ArrowUpTrayIcon} />}
-                onClick={handleRestore}
-                colorScheme="blue"
-                variant="outline"
-                flex="1"
-              >
-                Restore Backup
-              </Button>
-            </Flex>
-          </VStack>
-        </Box>
-      </VStack>
+        </VStack>
+      </Grid>
     </Box>
   );
 };
