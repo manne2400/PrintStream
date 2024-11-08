@@ -3,7 +3,7 @@ import {
   Box, Heading, Text, VStack, FormControl, FormLabel,
   Input, NumberInput, NumberInputField, NumberInputStepper,
   NumberIncrementStepper, NumberDecrementStepper,
-  Select, Button, useToast, Divider, Textarea
+  Select, Button, useToast, Divider, Textarea, useColorMode, Switch
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
 import { SettingsOperations, Settings as SettingsType, LicenseOperations } from '../database/operations';
@@ -36,6 +36,8 @@ const Settings: React.FC = () => {
   });
 
   const [newLicenseKey, setNewLicenseKey] = useState('');
+
+  const { colorMode, toggleColorMode } = useColorMode();
 
   useEffect(() => {
     loadSettings();
@@ -327,6 +329,25 @@ const Settings: React.FC = () => {
           <Button colorScheme="blue" onClick={handleSave}>
             Save Settings
           </Button>
+        </Box>
+
+        <Box>
+          <Heading size="md" mb={4}>Appearance</Heading>
+          <VStack spacing={4} align="stretch">
+            <FormControl display="flex" alignItems="center">
+              <FormLabel htmlFor="dark-mode" mb="0">
+                Dark Mode
+              </FormLabel>
+              <Switch
+                id="dark-mode"
+                isChecked={colorMode === 'dark'}
+                onChange={() => {
+                  toggleColorMode();
+                  handleSave();
+                }}
+              />
+            </FormControl>
+          </VStack>
         </Box>
       </VStack>
     </Box>

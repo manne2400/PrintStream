@@ -1,12 +1,13 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ChakraProvider, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Text, Link, Input, FormControl, FormLabel, Button, VStack } from '@chakra-ui/react';
+import { ChakraProvider, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Text, Link, Input, FormControl, FormLabel, Button, VStack, ColorModeScript } from '@chakra-ui/react';
 import Layout from './components/Layout';
 import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import initializeDatabase from './database/setup';
 import { FilamentOperations } from './database/operations';
 import { LicenseOperations } from './database/operations';
+import theme from './theme';
 
 // Page imports
 import Dashboard from './pages/Dashboard';
@@ -193,7 +194,8 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ChakraProvider>
+    <ChakraProvider theme={theme}>
+      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <NotificationProvider>
         <CurrencyProvider>
           <AppContent />

@@ -1,18 +1,22 @@
 import React from 'react';
-import { Box, Flex } from '@chakra-ui/react';
-import Header from './Header';
+import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
 import Sidebar from './Sidebar';
+import Header from './Header';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const bg = useColorModeValue('white', 'gray.800');
+
   return (
     <Flex h="100vh">
-      <Sidebar />
-      <Flex flex="1" direction="column" bg="gray.50">
+      <Box w="250px" bg="#1e2633" color="white">
+        <Sidebar />
+      </Box>
+      <Box flex="1" bg={bg}>
         <Header />
-        <Box flex="1" p="6" overflowY="auto">
+        <Box p="6" overflowY="auto" h="calc(100vh - 64px)" bg={bg}>
           {children}
         </Box>
-      </Flex>
+      </Box>
     </Flex>
   );
 };

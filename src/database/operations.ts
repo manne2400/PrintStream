@@ -57,6 +57,7 @@ export interface Settings {
   company_email: string;
   bank_details: string;
   vat_id: string;
+  dark_mode: boolean;
 }
 
 export interface PrintJob {

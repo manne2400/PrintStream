@@ -11,8 +11,13 @@ import { useNotifications } from '../context/NotificationContext';
 const Header: React.FC = () => {
   const location = useLocation();
   const { notifications, removeNotification } = useNotifications();
+  
+  // Brug useColorModeValue for at skifte farver baseret på theme
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const bgColor = useColorModeValue('gray.50', 'gray.700');
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const textColor = useColorModeValue('gray.800', 'white');
+  const notificationBgColor = useColorModeValue('gray.50', 'gray.700');
+  const notificationTextColor = useColorModeValue('gray.600', 'gray.200');
   
   const getPageTitle = () => {
     const path = location.pathname.split('/')[1];
@@ -32,14 +37,14 @@ const Header: React.FC = () => {
   return (
     <Box 
       as="header"
-      bg="gray.50" 
+      bg={bgColor}
       borderBottom="1px" 
       borderColor={borderColor}
       h="16"
       px="6"
     >
       <Flex h="full" align="center" justify="space-between">
-        <Heading size="lg" fontWeight="semibold" color="gray.800">
+        <Heading size="lg" fontWeight="semibold" color={textColor}>
           {getPageTitle()}
         </Heading>
         
@@ -71,14 +76,14 @@ const Header: React.FC = () => {
           <PopoverContent width="300px">
             <PopoverBody p={4}>
               {uniqueNotifications.length === 0 ? (
-                <Text color="gray.500" textAlign="center">No notifications</Text>
+                <Text color={notificationTextColor} textAlign="center">No notifications</Text>
               ) : (
                 <VStack spacing={3} align="stretch">
                   {uniqueNotifications.map(notification => (
                     <Box
                       key={notification.id}
                       p={3}
-                      bg={bgColor}
+                      bg={notificationBgColor}
                       borderRadius="md"
                       position="relative"
                     >
@@ -89,10 +94,10 @@ const Header: React.FC = () => {
                         top="2"
                         onClick={() => removeNotification(notification.id)}
                       />
-                      <Text fontWeight="bold" fontSize="sm" mb={1}>
+                      <Text fontWeight="bold" fontSize="sm" mb={1} color={textColor}>
                         {notification.title}
                       </Text>
-                      <Text fontSize="sm" color="gray.600">
+                      <Text fontSize="sm" color={notificationTextColor}>
                         {notification.message}
                       </Text>
                     </Box>
