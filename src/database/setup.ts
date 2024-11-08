@@ -187,7 +187,7 @@ const initializeDatabase = async (): Promise<Database> => {
       ) VALUES (
         100,
         100,
-        'DKK'
+        'EUR'
       );
     `);
   }

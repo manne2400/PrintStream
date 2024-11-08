@@ -315,7 +315,7 @@ export class SettingsOperations {
     return settings || {
       printer_hourly_rate: 100,
       post_processing_cost: 100,
-      currency: 'DKK',
+      currency: 'EUR',
       profit_margin: 0,
       company_name: '',
       company_address: '',
@@ -337,7 +337,7 @@ export class SettingsOperations {
 
   async getCurrency(): Promise<string> {
     const settings = await this.db.get('SELECT currency FROM settings LIMIT 1');
-    return settings?.currency || 'DKK';
+    return settings?.currency || 'EUR';
   }
 }
 
@@ -531,6 +531,14 @@ export class LicenseOperations {
         return false;
       }
 
+      // Hent nuværende licens info
+      const currentLicense = await this.db.get('SELECT * FROM license WHERE id = 1');
+      const currentExpiry = new Date(currentLicense.expiry_date);
+      
+      // Beregn ny udløbsdato ved at tilføje dage til den eksisterende udløbsdato
+      const newExpiryDate = new Date(currentExpiry);
+      newExpiryDate.setDate(currentExpiry.getDate() + validation.days);
+
       // Gem licensen som brugt
       const installationId = await this.getInstallationId();
       await this.db.run(
@@ -542,13 +550,13 @@ export class LicenseOperations {
         [licenseKey, installationId]
       );
       
-      // Forlæng licensen
+      // Opdater licensen med den nye udløbsdato
       await this.db.run(`
         UPDATE license 
-        SET expiry_date = datetime('now', '+${validation.days} days'),
+        SET expiry_date = ?,
             license_key = ?
         WHERE id = 1
-      `, [licenseKey]);
+      `, [newExpiryDate.toISOString(), licenseKey]);
       
       return true;
     } catch (err) {
