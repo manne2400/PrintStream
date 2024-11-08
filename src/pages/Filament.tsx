@@ -545,6 +545,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   const [editModalData, setEditModalData] = useState<FilamentType | null>(null);
   const [addStockModalData, setAddStockModalData] = useState<FilamentType | null>(null);
   const { currency } = useCurrency();
+  const [rolls, setRolls] = useState<number>(1);
 
   useEffect(() => {
     loadFilaments();
@@ -616,7 +617,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         color: formData.color,
         weight: formData.weight,
         price: formData.pricePerKg,
-        stock: formData.weight,
+        stock: formData.weight * rolls,
         ams_slot: formData.useAms ? formData.amsSlot : null,
         low_stock_alert: formData.lowStockAlert,
       });
@@ -884,6 +885,11 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                   Price/kg {renderSortIcon('price')}
                 </Flex>
               </Th>
+              <Th isNumeric cursor="pointer" onClick={() => handleSort('weight')}>
+                <Flex align="center" justify="flex-end">
+                  Roll Weight (g) {renderSortIcon('weight')}
+                </Flex>
+              </Th>
               <Th isNumeric cursor="pointer" onClick={() => handleSort('stock')}>
                 <Flex align="center" justify="flex-end">
                   Stock (g) {renderSortIcon('stock')}
@@ -923,6 +929,15 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                       type="text"
                       pattern="\d*,?\d{0,2}"
                     />
+                  </Editable>
+                </Td>
+                <Td isNumeric>
+                  <Editable
+                    defaultValue={filament.weight.toString()}
+                    onSubmit={(value) => handleUpdate(filament.id!, { weight: parseInt(value) })}
+                  >
+                    <EditablePreview />
+                    <EditableInput type="number" min="0" />
                   </Editable>
                 </Td>
                 <Td isNumeric>
@@ -1053,10 +1068,10 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Weight (g)</FormLabel>
+                <FormLabel>Weight per Roll (g)</FormLabel>
                 <NumberInput
                   value={formData.weight}
-                  onChange={(value) => handleInputChange('weight', parseInt(value))}
+                  onChange={(value) => setFormData(prev => ({ ...prev, weight: parseInt(value) }))}
                   min={0}
                   defaultValue={1000}
                 >
@@ -1066,6 +1081,24 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                     <NumberDecrementStepper />
                   </NumberInputStepper>
                 </NumberInput>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Number of Rolls</FormLabel>
+                <NumberInput
+                  value={rolls}
+                  onChange={(value) => setRolls(parseInt(value))}
+                  min={1}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+                <Text fontSize="sm" color="gray.500" mt={1}>
+                  Total stock: {(formData.weight * rolls).toLocaleString()}g
+                </Text>
               </FormControl>
 
               <FormControl display="flex" alignItems="center">

@@ -310,7 +310,7 @@ Databasen bruger SQLite3 med følgende tabeller:
 │   │
 │   ├── types/
 │   │   └── (TypeScript definitioner)
-│   ��
+│   │
 │   ├── assets/
 │   │   └── (Statiske filer)
 │   │

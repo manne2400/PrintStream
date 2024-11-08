@@ -19,22 +19,61 @@ export const validateLicenseKey = (key: string): {
   days?: number;
 } => {
   try {
-    const parts = key.split('-');
-    if (parts.length !== 4) return { isValid: false };
+    // Tilføj debug logging
+    console.log('Starting license validation for key:', key);
     
+    // Fjern eventuelle mellemrum og konverter til lowercase
+    key = key.trim().toLowerCase();
+    
+    // Mere fleksibelt format check
+    const parts = key.split('-');
+    if (parts.length !== 4) {
+      console.log('Invalid number of parts');
+      return { isValid: false };
+    }
+
     const [customerHash, daysEncoded, checksum1, checksum2] = parts;
+    
+    // Validér hver del individuelt
+    if (customerHash.length !== 4 || 
+        !customerHash.match(/^[0-9a-f]{4}$/)) {
+      console.log('Invalid customer hash format');
+      return { isValid: false };
+    }
+
+    // Tillad variabel længde for daysEncoded (op til 5 tegn)
+    if (!daysEncoded.match(/^[0-9a-f]{1,5}$/)) {
+      console.log('Invalid days format');
+      return { isValid: false };
+    }
+
+    if (checksum1.length !== 4 || checksum2.length !== 4 ||
+        !checksum1.match(/^[0-9a-f]{4}$/) || 
+        !checksum2.match(/^[0-9a-f]{4}$/)) {
+      console.log('Invalid checksum format');
+      return { isValid: false };
+    }
+
     const checksum = checksum1 + checksum2;
     
-    // Valider checksum
+    // Validate checksum
     const expectedChecksum = generateChecksum(customerHash + daysEncoded);
-    if (checksum !== expectedChecksum) return { isValid: false };
-    
-    // Dekrypter antal dage
+    if (checksum !== expectedChecksum.slice(0, 8)) {
+      console.log('Invalid checksum');
+      return { isValid: false };
+    }
+
+    // Decode days
     const days = decodeDays(daysEncoded);
-    if (!days || days <= 0) return { isValid: false };
-    
+    if (days <= 0 || days > 3650) { // Max 10 years
+      console.log('Invalid days:', days);
+      return { isValid: false };
+    }
+
+    console.log('License validation successful. Days:', days);
     return { isValid: true, days };
-  } catch {
+  } catch (err) {
+    console.error('Error in validateLicenseKey:', err);
     return { isValid: false };
   }
 };

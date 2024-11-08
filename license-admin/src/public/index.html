@@ -89,6 +89,21 @@
     </table>
   </div>
 
+  <div class="history">
+    <h3>Stored Licenses</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Generated Date</th>
+          <th>Customer ID</th>
+          <th>Days</th>
+          <th>License Key</th>
+        </tr>
+      </thead>
+      <tbody id="storedLicensesBody"></tbody>
+    </table>
+  </div>
+
   <script>
     async function generateLicense() {
       const customerId = document.getElementById('customerId').value;
@@ -132,6 +147,34 @@
       row.insertCell(2).textContent = days + ' dage';
       row.insertCell(3).textContent = licenseKey;
     }
+
+    async function loadStoredLicenses() {
+      try {
+        const response = await fetch('/licenses');
+        const licenses = await response.json();
+        
+        const tbody = document.getElementById('storedLicensesBody');
+        tbody.innerHTML = ''; // Clear existing content
+        
+        licenses.forEach(license => {
+          const row = tbody.insertRow();
+          row.insertCell(0).textContent = new Date(license.generatedAt).toLocaleString();
+          row.insertCell(1).textContent = license.customerId;
+          row.insertCell(2).textContent = license.days + ' Days';
+          row.insertCell(3).textContent = license.licenseKey;
+        });
+      } catch (err) {
+        console.error('Failed to load stored licenses:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadStoredLicenses);
+
+    const originalGenerateLicense = generateLicense;
+    generateLicense = async function() {
+      await originalGenerateLicense();
+      await loadStoredLicenses();
+    };
   </script>
 </body>
 </html> 
