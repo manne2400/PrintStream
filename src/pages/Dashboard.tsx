@@ -223,9 +223,9 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Box>
+    <Box p={4}>
       <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={6}>
-        <Box bg="white" p={6} rounded="lg" shadow="sm">
+        <Box variant="stats-card">
           <Flex align="center">
             <Flex
               p={3}
@@ -238,8 +238,8 @@ const Dashboard: React.FC = () => {
             </Flex>
             <Box ml={4}>
               <Stat>
-                <StatLabel color="gray.500" fontSize="sm">Total Revenue</StatLabel>
-                <StatNumber fontSize="2xl">{currency} {stats.totalRevenue.toFixed(2)}</StatNumber>
+                <StatLabel>Total Revenue</StatLabel>
+                <StatNumber>{currency} {stats.totalRevenue.toFixed(2)}</StatNumber>
                 <StatHelpText>
                   <StatArrow type="increase" />
                   All time
@@ -249,7 +249,7 @@ const Dashboard: React.FC = () => {
           </Flex>
         </Box>
 
-        <Box bg="white" p={6} rounded="lg" shadow="sm">
+        <Box variant="stats-card">
           <Flex align="center">
             <Flex
               p={3}
@@ -262,8 +262,8 @@ const Dashboard: React.FC = () => {
             </Flex>
             <Box ml={4}>
               <Stat>
-                <StatLabel color="gray.500" fontSize="sm">Total Profit</StatLabel>
-                <StatNumber fontSize="2xl">{currency} {stats.totalProfit.toFixed(2)}</StatNumber>
+                <StatLabel>Total Profit</StatLabel>
+                <StatNumber>{currency} {stats.totalProfit.toFixed(2)}</StatNumber>
                 <StatHelpText>
                   {((stats.totalProfit / stats.totalRevenue) * 100).toFixed(1)}% margin
                 </StatHelpText>
@@ -272,7 +272,7 @@ const Dashboard: React.FC = () => {
           </Flex>
         </Box>
 
-        <Box bg="white" p={6} rounded="lg" shadow="sm">
+        <Box variant="stats-card">
           <Flex align="center">
             <Flex
               p={3}
@@ -285,8 +285,8 @@ const Dashboard: React.FC = () => {
             </Flex>
             <Box ml={4}>
               <Stat>
-                <StatLabel color="gray.500" fontSize="sm">Total Orders</StatLabel>
-                <StatNumber fontSize="2xl">{stats.totalOrders}</StatNumber>
+                <StatLabel>Total Orders</StatLabel>
+                <StatNumber>{stats.totalOrders}</StatNumber>
                 <StatHelpText>
                   Lifetime orders
                 </StatHelpText>
@@ -295,7 +295,7 @@ const Dashboard: React.FC = () => {
           </Flex>
         </Box>
 
-        <Box bg="white" p={6} rounded="lg" shadow="sm">
+        <Box variant="stats-card">
           <Flex align="center">
             <Flex
               p={3}
@@ -308,8 +308,8 @@ const Dashboard: React.FC = () => {
             </Flex>
             <Box ml={4}>
               <Stat>
-                <StatLabel color="gray.500" fontSize="sm">Low Stock Items</StatLabel>
-                <StatNumber fontSize="2xl">{stats.lowStockItems}</StatNumber>
+                <StatLabel>Low Stock Items</StatLabel>
+                <StatNumber>{stats.lowStockItems}</StatNumber>
                 <StatHelpText>
                   Need attention
                 </StatHelpText>
@@ -320,33 +320,27 @@ const Dashboard: React.FC = () => {
       </SimpleGrid>
 
       <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6} mb={6}>
-        <Box bg="white" p={6} rounded="lg" shadow="sm">
+        <Box variant="stats-card">
           <Text fontSize="lg" fontWeight="medium" mb={4}>Sales Overview</Text>
-          <Box height="300px"> {/* Fast højde på container */}
+          <Box height="300px">
             {salesChartData && (
-              <Line
-                data={salesChartData}
-                options={chartOptions}
-              />
+              <Line data={salesChartData} options={chartOptions} />
             )}
           </Box>
         </Box>
 
-        <Box bg="white" p={6} rounded="lg" shadow="sm">
+        <Box variant="stats-card">
           <Text fontSize="lg" fontWeight="medium" mb={4}>Top Products Revenue</Text>
-          <Box height="300px"> {/* Fast højde på container */}
+          <Box height="300px">
             {productChartData && (
-              <Bar
-                data={productChartData}
-                options={chartOptions}
-              />
+              <Bar data={productChartData} options={chartOptions} />
             )}
           </Box>
         </Box>
       </SimpleGrid>
 
       <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6} mb={6}>
-        <Box bg="white" p={6} rounded="lg" shadow="sm">
+        <Box variant="stats-card">
           <Text fontSize="lg" fontWeight="medium" mb={4}>Recent Sales</Text>
           <Table variant="simple" size="sm">
             <Thead>
@@ -380,7 +374,7 @@ const Dashboard: React.FC = () => {
           </Table>
         </Box>
 
-        <Box bg="white" p={6} rounded="lg" shadow="sm">
+        <Box variant="stats-card">
           <Text fontSize="lg" fontWeight="medium" mb={4}>Recent Activity</Text>
           <Table variant="simple" size="sm">
             <Thead>
