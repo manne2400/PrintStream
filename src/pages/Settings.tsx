@@ -12,9 +12,10 @@ import { useCurrency } from '../context/CurrencyContext';
 const Settings: React.FC = () => {
   const toast = useToast();
   const [settings, setSettings] = useState<SettingsType>({
-    printer_hourly_rate: 100,
-    post_processing_cost: 100,
-    currency: 'DKK',
+    printer_hourly_rate: 0,
+    post_processing_cost: 0,
+    currency: 'USD',
+    profit_margin: 30,
     company_name: '',
     company_address: '',
     company_phone: '',
@@ -50,15 +51,8 @@ const Settings: React.FC = () => {
       const ops = new SettingsOperations(db);
       const data = await ops.getSettings();
       setSettings({
-        printer_hourly_rate: data.printer_hourly_rate ?? 100,
-        post_processing_cost: data.post_processing_cost ?? 100,
-        currency: data.currency ?? 'DKK',
-        company_name: data.company_name ?? '',
-        company_address: data.company_address ?? '',
-        company_phone: data.company_phone ?? '',
-        company_email: data.company_email ?? '',
-        bank_details: data.bank_details ?? '',
-        vat_id: data.vat_id ?? ''
+        ...data,
+        profit_margin: data.profit_margin ?? 30
       });
     } catch (err) {
       console.error('Failed to load settings:', err);

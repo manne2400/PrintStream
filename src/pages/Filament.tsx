@@ -14,6 +14,7 @@ import { PlusIcon, PencilIcon, DocumentDuplicateIcon, TrashIcon, MagnifyingGlass
 import initializeDatabase from '../database/setup';
 import { FilamentOperations, Filament as FilamentType } from '../database/operations';
 import { useNotifications } from '../context/NotificationContext';
+import { useCurrency } from '../context/CurrencyContext';
 
 const FilamentTypes = [
   'PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'Nylon', 'HIPS', 'PVA', 'Other'
@@ -543,6 +544,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
   const [editModalData, setEditModalData] = useState<FilamentType | null>(null);
   const [addStockModalData, setAddStockModalData] = useState<FilamentType | null>(null);
+  const { currency } = useCurrency();
 
   useEffect(() => {
     loadFilaments();
@@ -1031,7 +1033,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Price per kg (DKK)</FormLabel>
+                <FormLabel>Price per kg ({currency})</FormLabel>
                 <Editable
                   placeholder="0,00"
                   defaultValue={formData.pricePerKg.toFixed(2).replace('.', ',')}

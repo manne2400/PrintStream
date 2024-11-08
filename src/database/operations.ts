@@ -50,6 +50,7 @@ export interface Settings {
   printer_hourly_rate: number;
   post_processing_cost: number;
   currency: string;
+  profit_margin: number;
   company_name: string;
   company_address: string;
   company_phone: string;
@@ -314,6 +315,7 @@ export class SettingsOperations {
       printer_hourly_rate: 100,
       post_processing_cost: 100,
       currency: 'DKK',
+      profit_margin: 0,
       company_name: '',
       company_address: '',
       company_phone: '',
