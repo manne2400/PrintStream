@@ -4,7 +4,7 @@ import {
   Table, Thead, Tbody, Tr, Th, Td,
   Select, Card, CardHeader, CardBody,
   Stat, StatLabel, StatNumber, StatHelpText,
-  StatArrow, Divider, Progress
+  StatArrow, Divider, Progress, useColorModeValue
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
 import { SalesOperations, PrintJobOperations, CustomerOperations, FilamentOperations, ProjectOperations } from '../database/operations';
@@ -201,88 +201,52 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Flex justify="space-between" align="center" mb={6}>
-        <Box>
-          <Heading size="lg" fontWeight="semibold" color="gray.800">
-            Reports
-          </Heading>
-          <Text mt={1} color="gray.500" fontSize="sm">
-            Business analytics and insights
-          </Text>
+    <Box p={4}>
+      <Grid templateColumns="repeat(4, 1fr)" gap={6} mb={6}>
+        <Box variant="stats-card">
+          <Stat>
+            <StatLabel>Total Revenue</StatLabel>
+            <StatNumber>{currency} {salesStats.totalRevenue.toFixed(2)}</StatNumber>
+            <StatHelpText>
+              <StatArrow type="increase" />
+              {timeFrame === 'week' ? '7 days' : timeFrame === 'month' ? '30 days' : '365 days'}
+            </StatHelpText>
+          </Stat>
         </Box>
-        <Select
-          width="200px"
-          value={timeFrame}
-          onChange={(e) => setTimeFrame(e.target.value as 'week' | 'month' | 'year')}
-        >
-          <option value="week">Last 7 Days</option>
-          <option value="month">Last 30 Days</option>
-          <option value="year">Last 365 Days</option>
-        </Select>
-      </Flex>
 
-      <Grid templateColumns="repeat(4, 1fr)" gap={6} mb={8}>
-        <GridItem>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Total Revenue</StatLabel>
-                <StatNumber>{currency} {salesStats.totalRevenue.toFixed(2)}</StatNumber>
-                <StatHelpText>
-                  <StatArrow type="increase" />
-                  {timeFrame === 'week' ? '7 days' : timeFrame === 'month' ? '30 days' : '365 days'}
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-        </GridItem>
+        <Box variant="stats-card">
+          <Stat>
+            <StatLabel>Total Profit</StatLabel>
+            <StatNumber>{currency} {salesStats.totalProfit.toFixed(2)}</StatNumber>
+            <StatHelpText>
+              Margin: {salesStats.profitMargin.toFixed(1)}%
+            </StatHelpText>
+          </Stat>
+        </Box>
 
-        <GridItem>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Total Profit</StatLabel>
-                <StatNumber>{currency} {salesStats.totalProfit.toFixed(2)}</StatNumber>
-                <StatHelpText>
-                  Margin: {salesStats.profitMargin.toFixed(1)}%
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-        </GridItem>
+        <Box variant="stats-card">
+          <Stat>
+            <StatLabel>Number of Sales</StatLabel>
+            <StatNumber>{salesStats.totalSales}</StatNumber>
+            <StatHelpText>
+              Avg. {currency} {salesStats.averageOrderValue.toFixed(2)}
+            </StatHelpText>
+          </Stat>
+        </Box>
 
-        <GridItem>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Number of Sales</StatLabel>
-                <StatNumber>{salesStats.totalSales}</StatNumber>
-                <StatHelpText>
-                  Avg. {currency} {salesStats.averageOrderValue.toFixed(2)}
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-        </GridItem>
-
-        <GridItem>
-          <Card>
-            <CardBody>
-              <Stat>
-                <StatLabel>Profit Margin</StatLabel>
-                <StatNumber>{salesStats.profitMargin.toFixed(1)}%</StatNumber>
-                <StatHelpText>
-                  Of total revenue
-                </StatHelpText>
-              </Stat>
-            </CardBody>
-          </Card>
-        </GridItem>
+        <Box variant="stats-card">
+          <Stat>
+            <StatLabel>Profit Margin</StatLabel>
+            <StatNumber>{salesStats.profitMargin.toFixed(1)}%</StatNumber>
+            <StatHelpText>
+              Of total revenue
+            </StatHelpText>
+          </Stat>
+        </Box>
       </Grid>
 
       {/* Customer Statistics */}
-      <Box bg="white" p={6} rounded="lg" shadow="sm" mb={8}>
+      <Box variant="stats-card" mb={8}>
         <Heading size="md" mb={4}>Customer Statistics</Heading>
         <Grid templateColumns="repeat(3, 1fr)" gap={6} mb={6}>
           <Card>
@@ -336,7 +300,7 @@ const Reports: React.FC = () => {
       </Box>
 
       {/* Inventory Statistics */}
-      <Box bg="white" p={6} rounded="lg" shadow="sm" mb={8}>
+      <Box variant="stats-card" mb={8}>
         <Heading size="md" mb={4}>Inventory Statistics</Heading>
         <Grid templateColumns="repeat(4, 1fr)" gap={6} mb={6}>
           <Card>
@@ -407,7 +371,7 @@ const Reports: React.FC = () => {
         </Table>
       </Box>
 
-      <Box bg="white" p={6} rounded="lg" shadow="sm" mb={8}>
+      <Box variant="stats-card" mb={8}>
         <Heading size="md" mb={4}>Top Products</Heading>
         <Table variant="simple">
           <Thead>

@@ -20,6 +20,16 @@ const theme = extendTheme({
       baseStyle: (props: any) => ({
         bg: props.colorMode === 'dark' ? 'gray.800' : 'white',
       }),
+      variants: {
+        'stats-card': (props: any) => ({
+          bg: props.colorMode === 'dark' ? 'gray.700' : 'white',
+          borderWidth: '1px',
+          borderColor: props.colorMode === 'dark' ? 'gray.600' : 'gray.200',
+          borderRadius: 'lg',
+          p: 6,
+          shadow: 'sm'
+        })
+      }
     },
     Container: {
       baseStyle: (props: any) => ({
@@ -42,6 +52,13 @@ const theme = extendTheme({
     CardHeader: {
       baseStyle: (props: any) => ({
         bg: props.colorMode === 'dark' ? 'gray.700' : 'white',
+      }),
+    },
+    Chart: {
+      baseStyle: (props: any) => ({
+        bg: props.colorMode === 'dark' ? 'gray.700' : 'white',
+        borderRadius: 'lg',
+        p: 4,
       }),
     },
     Table: {

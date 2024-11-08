@@ -160,10 +160,10 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <Box>
+    <Box p={4}>
       <VStack spacing={8} align="stretch">
         {/* Pricing Settings */}
-        <Box>
+        <Box variant="stats-card">
           <Heading size="md" mb={4}>Pricing Settings</Heading>
           <VStack spacing={4} align="stretch">
             <FormControl>
@@ -237,7 +237,7 @@ const Settings: React.FC = () => {
         <Divider />
 
         {/* Company Information */}
-        <Box>
+        <Box variant="stats-card">
           <Heading size="md" mb={4}>Company Information</Heading>
           <VStack spacing={4} align="stretch">
             <FormControl>
@@ -279,7 +279,7 @@ const Settings: React.FC = () => {
         <Divider />
 
         {/* Bank Information */}
-        <Box>
+        <Box variant="stats-card">
           <Heading size="md" mb={4}>Bank Information</Heading>
           <VStack spacing={4} align="stretch">
             <FormControl>
@@ -302,7 +302,7 @@ const Settings: React.FC = () => {
           </VStack>
         </Box>
 
-        <Box bg="white" p={6} rounded="lg" shadow="sm" mb={6}>
+        <Box variant="stats-card">
           <Heading size="md" mb={4}>License Information</Heading>
           <VStack align="stretch" spacing={4}>
             <Text>Days Remaining: {licenseInfo.daysLeft}</Text>
@@ -331,7 +331,7 @@ const Settings: React.FC = () => {
           </Button>
         </Box>
 
-        <Box>
+        <Box variant="stats-card">
           <Heading size="md" mb={4}>Appearance</Heading>
           <VStack spacing={4} align="stretch">
             <FormControl display="flex" alignItems="center">
@@ -341,10 +341,7 @@ const Settings: React.FC = () => {
               <Switch
                 id="dark-mode"
                 isChecked={colorMode === 'dark'}
-                onChange={() => {
-                  toggleColorMode();
-                  handleSave();
-                }}
+                onChange={toggleColorMode}
               />
             </FormControl>
           </VStack>
