@@ -5,11 +5,11 @@ import {
   useToast, InputGroup, InputLeftElement, Input,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter,
   FormControl, FormLabel, Select, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper,
-  VStack, Textarea, Badge, Divider, Checkbox
+  VStack, Textarea, Badge, Divider, Checkbox, IconButton
 } from '@chakra-ui/react';
-import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon, TrashIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
-import { SalesOperations } from '../database/operations';
+import { SalesOperations, ProjectOperations, FilamentOperations } from '../database/operations';
 import { PrintJobOperations } from '../database/operations';
 import { CustomerOperations } from '../database/operations';
 import { SettingsOperations } from '../database/operations';
@@ -53,6 +53,13 @@ interface SaleFormData {
   notes: string;
   isGift: boolean;
   saleDate: string;
+}
+
+interface DeleteSaleModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  sale: Sale;
+  onConfirm: () => Promise<void>;
 }
 
 const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
@@ -479,6 +486,35 @@ const PaymentStatusModal: React.FC<PaymentStatusModalProps> = ({ isOpen, onClose
   );
 };
 
+const DeleteSaleModal: React.FC<DeleteSaleModalProps> = ({ isOpen, onClose, sale, onConfirm }) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Delete Sale</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <Text>
+            Are you sure you want to delete sale "{sale.invoice_number}"? 
+            This action cannot be undone.
+          </Text>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            colorScheme="red" 
+            onClick={onConfirm}
+          >
+            Delete
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 const Sales: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -487,6 +523,7 @@ const Sales: React.FC = () => {
   const toast = useToast();
   const { currency } = useCurrency();
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [deleteSale, setDeleteSale] = useState<Sale | null>(null);
 
   useEffect(() => {
     loadSales();
@@ -563,6 +600,38 @@ const Sales: React.FC = () => {
       toast({
         title: 'Error',
         description: 'Failed to update payment status',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteSale) return;
+
+    try {
+      const db = await initializeDatabase();
+      const ops = new SalesOperations(db);
+      
+      // Slet salget
+      await ops.deleteSale(deleteSale.id!);
+      
+      toast({
+        title: 'Success',
+        description: 'Sale deleted successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      setDeleteSale(null);
+      loadSales();
+    } catch (err) {
+      console.error('Failed to delete sale:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete sale',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -648,19 +717,29 @@ const Sales: React.FC = () => {
                 <Td>{sale.project_name}</Td>
                 <Td isNumeric>{currency} {sale.total_price.toFixed(2)}</Td>
                 <Td>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    leftIcon={<Icon as={CreditCardIcon} />}
-                    colorScheme={
-                      sale.payment_status === 'paid' ? 'green' :
-                      sale.payment_status === 'pending' ? 'yellow' :
-                      'red'
-                    }
-                    onClick={() => setSelectedSale(sale)}
-                  >
-                    {sale.payment_status.toUpperCase()}
-                  </Button>
+                  <Flex gap={2}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      leftIcon={<Icon as={CreditCardIcon} />}
+                      colorScheme={
+                        sale.payment_status === 'paid' ? 'green' :
+                        sale.payment_status === 'pending' ? 'yellow' :
+                        'red'
+                      }
+                      onClick={() => setSelectedSale(sale)}
+                    >
+                      {sale.payment_status.toUpperCase()}
+                    </Button>
+                    <IconButton
+                      aria-label="Delete sale"
+                      icon={<Icon as={TrashIcon} />}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="red"
+                      onClick={() => setDeleteSale(sale)}
+                    />
+                  </Flex>
                 </Td>
               </Tr>
             ))}
@@ -681,6 +760,14 @@ const Sales: React.FC = () => {
           onClose={() => setSelectedSale(null)}
           sale={selectedSale}
           onSubmit={handleUpdatePaymentStatus}
+        />
+      )}
+      {deleteSale && (
+        <DeleteSaleModal
+          isOpen={deleteSale !== null}
+          onClose={() => setDeleteSale(null)}
+          sale={deleteSale}
+          onConfirm={handleDelete}
         />
       )}
     </Box>

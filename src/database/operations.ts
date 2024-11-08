@@ -486,6 +486,10 @@ export class SalesOperations {
       [status, id]
     );
   }
+
+  async deleteSale(id: number): Promise<void> {
+    await this.db.run('DELETE FROM sales WHERE id = ?', [id]);
+  }
 }
 
 export class LicenseOperations {
