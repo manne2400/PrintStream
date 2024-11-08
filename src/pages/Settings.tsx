@@ -43,6 +43,9 @@ const Settings: React.FC = () => {
 
   const [autoBackup, setAutoBackup] = useState(false);
 
+  const [customCurrency, setCustomCurrency] = useState('');
+  const [showCustomCurrency, setShowCustomCurrency] = useState(false);
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -117,9 +120,14 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleCurrencyChange = async (newCurrency: string) => {
-    setSettings(prev => ({ ...prev, currency: newCurrency }));
-    await updateCurrency(newCurrency);
+  const handleCurrencyChange = async (value: string) => {
+    if (value === 'CUSTOM') {
+      setShowCustomCurrency(true);
+    } else {
+      setShowCustomCurrency(false);
+      setSettings(prev => ({ ...prev, currency: value }));
+      await updateCurrency(value);
+    }
   };
 
   const handleLicenseSubmit = async () => {
@@ -268,8 +276,19 @@ const Settings: React.FC = () => {
     { code: 'SEK', name: 'Swedish Krona' },
     { code: 'NOK', name: 'Norwegian Krone' },
     { code: 'AUD', name: 'Australian Dollar' },
-    { code: 'CAD', name: 'Canadian Dollar' }
+    { code: 'CAD', name: 'Canadian Dollar' },
+    { code: 'CUSTOM', name: 'Custom Currency' }
   ];
+
+  // Tilføj custom currency håndtering
+  const handleCustomCurrencySubmit = async () => {
+    if (customCurrency.trim()) {
+      setSettings(prev => ({ ...prev, currency: customCurrency.trim().toUpperCase() }));
+      await updateCurrency(customCurrency.trim().toUpperCase());
+      setShowCustomCurrency(false);
+      setCustomCurrency('');
+    }
+  };
 
   return (
     <Box p={4}>
@@ -340,16 +359,36 @@ const Settings: React.FC = () => {
 
               <FormControl>
                 <FormLabel>Currency</FormLabel>
-                <Select
-                  value={settings.currency}
-                  onChange={(e) => handleCurrencyChange(e.target.value)}
-                >
-                  {CURRENCIES.map(currency => (
-                    <option key={currency.code} value={currency.code}>
-                      {currency.code} - {currency.name}
-                    </option>
-                  ))}
-                </Select>
+                <VStack spacing={2} align="stretch">
+                  <Select
+                    value={showCustomCurrency ? 'CUSTOM' : settings.currency}
+                    onChange={(e) => handleCurrencyChange(e.target.value)}
+                  >
+                    {CURRENCIES.map(currency => (
+                      <option key={currency.code} value={currency.code}>
+                        {currency.code} - {currency.name}
+                      </option>
+                    ))}
+                  </Select>
+                  
+                  {showCustomCurrency && (
+                    <Flex gap={2}>
+                      <Input
+                        placeholder="Enter custom currency code (e.g., PLN)"
+                        value={customCurrency}
+                        onChange={(e) => setCustomCurrency(e.target.value)}
+                        maxLength={5}
+                      />
+                      <Button
+                        colorScheme="blue"
+                        onClick={handleCustomCurrencySubmit}
+                        isDisabled={!customCurrency.trim()}
+                      >
+                        Apply
+                      </Button>
+                    </Flex>
+                  )}
+                </VStack>
               </FormControl>
             </VStack>
           </Box>
