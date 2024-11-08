@@ -494,10 +494,16 @@ const DeleteSaleModal: React.FC<DeleteSaleModalProps> = ({ isOpen, onClose, sale
         <ModalHeader>Delete Sale</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Text>
-            Are you sure you want to delete sale "{sale.invoice_number}"? 
-            This action cannot be undone.
-          </Text>
+          <VStack spacing={4} align="stretch">
+            <Text>
+              Are you sure you want to delete sale "{sale.invoice_number}"? 
+              This action cannot be undone.
+            </Text>
+            <Text color="orange.500" fontWeight="medium">
+              Note: If you need the items back in stock, you must manually add them 
+              to your print inventory after deleting the sale.
+            </Text>
+          </VStack>
         </ModalBody>
         <ModalFooter>
           <Button variant="ghost" mr={3} onClick={onClose}>

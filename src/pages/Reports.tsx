@@ -76,20 +76,19 @@ const Reports: React.FC = () => {
       const projectOps = new ProjectOperations(db);
       const printJobOps = new PrintJobOperations(db);
       
-      // Hent salgsdata som før...
-      const sales = await salesOps.getAllSales();
+      // Hent salgsdata
+      const allSales = await salesOps.getAllSales();
       
       // Filtrer baseret på valgt tidsperiode
-      const now = new Date();
-      const filteredSales = sales.filter(sale => {
+      const filteredSales = allSales.filter(sale => {
         const saleDate = new Date(sale.sale_date);
+        const now = new Date();
         if (timeFrame === 'week') {
-          return now.getTime() - saleDate.getTime() <= 7 * 24 * 60 * 60 * 1000;
+          return (now.getTime() - saleDate.getTime()) <= 7 * 24 * 60 * 60 * 1000;
         } else if (timeFrame === 'month') {
-          return now.getTime() - saleDate.getTime() <= 30 * 24 * 60 * 60 * 1000;
-        } else {
-          return now.getTime() - saleDate.getTime() <= 365 * 24 * 60 * 60 * 1000;
+          return (now.getTime() - saleDate.getTime()) <= 30 * 24 * 60 * 60 * 1000;
         }
+        return (now.getTime() - saleDate.getTime()) <= 365 * 24 * 60 * 60 * 1000;
       });
 
       // Beregn statistik
@@ -134,24 +133,36 @@ const Reports: React.FC = () => {
         .slice(0, 5));
 
       // Beregn kundestatistik
-      const customers = await customerOps.getAllCustomers();
-      const activeCustomerIds = new Set(
-        filteredSales
-          .filter(sale => sale.customer_id !== null)
-          .map(sale => sale.customer_id)
-      );
+      const customerMap = new Map<number, { 
+        name: string;
+        total_purchases: number;
+        total_spent: number;
+      }>();
 
-      // Find unikke aktive kunde IDs fra de filtrerede salg
-      const actualActiveCustomers = customers.filter(customer => 
-        customer.id && activeCustomerIds.has(customer.id)
-      ).length;
+      // Gennemgå alle salg og opbyg kundestatistik
+      filteredSales.forEach(sale => {
+        if (sale.customer_id) {
+          const customer = customerMap.get(sale.customer_id) || {
+            name: sale.customer_name || 'Unknown',
+            total_purchases: 0,
+            total_spent: 0
+          };
 
-      // Opdater kundestatistik med korrekte tal
-      setCustomerStats({
-        totalCustomers: customers.length,
-        activeCustomers: actualActiveCustomers,
-        topCustomers: customerStats.topCustomers // Behold eksisterende top kunder
+          customer.total_purchases += sale.quantity;
+          customer.total_spent += sale.total_price;
+          customerMap.set(sale.customer_id, customer);
+        }
       });
+
+      // Konverter map til array og sorter efter total_spent
+      const topCustomers = Array.from(customerMap.values())
+        .sort((a, b) => b.total_spent - a.total_spent)
+        .slice(0, 5);  // Tag kun top 5
+
+      setCustomerStats(prev => ({
+        ...prev,
+        topCustomers
+      }));
 
       // Beregn lagerstatistik
       const filaments = await filamentOps.getAllFilaments();

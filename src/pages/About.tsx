@@ -1,146 +1,216 @@
 import React from 'react';
-import { Box, VStack, Heading, Text, Link, Divider } from '@chakra-ui/react';
+import { 
+  Box, VStack, Heading, Text, Link, Divider, 
+  SimpleGrid, Icon, Flex, Button 
+} from '@chakra-ui/react';
+import {
+  CubeIcon, CircleStackIcon, UserGroupIcon, ChartBarIcon,
+  CurrencyDollarIcon, ClockIcon, CogIcon, DocumentTextIcon
+} from '@heroicons/react/24/outline';
+
+const FeatureBox: React.FC<{
+  icon: any;
+  title: string;
+  description: string;
+  color: string;
+}> = ({ icon, title, description, color }) => (
+  <Box p={6} borderRadius="lg" borderWidth="1px" height="100%">
+    <Flex direction="column" align="center" textAlign="center">
+      <Flex
+        w={12}
+        h={12}
+        align="center"
+        justify="center"
+        rounded="full"
+        bg={`${color}.50`}
+        mb={4}
+      >
+        <Icon as={icon} color={`${color}.500`} boxSize={6} />
+      </Flex>
+      <Heading size="md" mb={2}>{title}</Heading>
+      <Text color="gray.500">{description}</Text>
+    </Flex>
+  </Box>
+);
 
 const About: React.FC = () => {
   return (
-    <Box>
-      <VStack spacing={6} align="stretch">
-        <Box>
-          <Heading size="lg" mb={2}>PrintStream</Heading>
-          <Text>
-            PrintStream is a complete management system designed specifically for 3D printing businesses. 
-            The program helps you keep track of everything from filament inventory management to customer orders and finances.
-          </Text>
-        </Box>
+    <Box p={4}>
+      <Box variant="stats-card">
+        <VStack align="stretch" spacing={8}>
+          {/* Introduktion */}
+          <Box textAlign="center" py={8}>
+            <Heading size="xl" mb={4}>Welcome to PrintStream</Heading>
+            <Text fontSize="lg" maxW="2xl" mx="auto">
+              Your complete solution for managing 3D printing business operations. 
+              From inventory tracking to sales management, PrintStream helps you 
+              streamline your workflow and grow your business.
+            </Text>
+          </Box>
 
-        <Divider />
+          <Divider />
 
-        <Box>
-          <Heading size="md" mb={3}>Main Features</Heading>
-          
-          <VStack spacing={4} align="stretch">
-            <Box>
-              <Heading size="sm" mb={2}>🧵 Filament Management</Heading>
-              <Text>
-                Keep track of your filament inventory with detailed tracking of type, color, weight, and price. 
-                The program automatically notifies you when stock is running low and supports 
-                integration with the Bambu Lab AMS system.
-              </Text>
-              <Text mt={2} fontSize="sm" color="gray.600">
-                Features:
-                - Automatic inventory tracking and low stock alerts
-                - AMS slot assignment and management (1-16)
-                - Price per kg with automatic material usage calculation
-                - Filament grouping by type and color
-                - Quick addition of new rolls with "Add Full Roll" function
-              </Text>
-            </Box>
+          {/* Hovedfunktioner */}
+          <Box>
+            <Heading size="lg" mb={6} textAlign="center">Core Features</Heading>
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6}>
+              <Box p={6} borderRadius="lg" borderWidth="1px" height="100%">
+                <FeatureBox
+                  icon={CircleStackIcon}
+                  title="Filament Management"
+                  description="Track inventory, manage AMS slots, and get low stock alerts"
+                  color="blue"
+                />
+              </Box>
+              <Box p={6} borderRadius="lg" borderWidth="1px" height="100%">
+                <FeatureBox
+                  icon={CubeIcon}
+                  title="Print Jobs"
+                  description="Organize prints, track status, and manage production"
+                  color="green"
+                />
+              </Box>
+              <Box p={6} borderRadius="lg" borderWidth="1px" height="100%">
+                <FeatureBox
+                  icon={UserGroupIcon}
+                  title="Customer Relations"
+                  description="Manage customers, track orders, and handle communications"
+                  color="purple"
+                />
+              </Box>
+              <Box p={6} borderRadius="lg" borderWidth="1px" height="100%">
+                <FeatureBox
+                  icon={ChartBarIcon}
+                  title="Business Analytics"
+                  description="Generate reports and track key performance metrics"
+                  color="orange"
+                />
+              </Box>
+            </SimpleGrid>
+          </Box>
 
-            <Box>
-              <Heading size="sm" mb={2}>📦 Print Inventory</Heading>
-              <Text>
-                Manage your print jobs efficiently. View status of ongoing prints, 
-                material usage, and costs. The system automatically manages inventory 
-                and updates stock levels when prints are started.
-              </Text>
-              <Text mt={2} fontSize="sm" color="gray.600">
-                Features:
-                - Automatic material usage calculation per print
-                - Real-time inventory updates when printing starts
-                - Grouping of identical prints
-                - Detailed cost breakdown per print job
-                - Integration with project and customer management
-              </Text>
-            </Box>
+          {/* Hvordan man bruger appen */}
+          <Box>
+            <Heading size="lg" mb={6} textAlign="center">Getting Started</Heading>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+              <Box p={6} borderRadius="lg" borderWidth="1px">
+                <VStack align="start" spacing={4}>
+                  <Flex align="center">
+                    <Icon as={CubeIcon} color="blue.500" boxSize={5} mr={2} />
+                    <Heading size="md">1. Set Up Your Inventory</Heading>
+                  </Flex>
+                  <Text>
+                    Start by adding your filaments in the Filament section. Enter details like:
+                    • Type and color
+                    • Weight and price
+                    • AMS slot (if applicable)
+                    • Low stock alert threshold
+                  </Text>
+                </VStack>
+              </Box>
 
-            <Box>
-              <Heading size="sm" mb={2}>📋 Project Management</Heading>
-              <Text>
-                Create and manage projects with detailed information about print time, 
-                post-processing, and materials. Get automatically calculated costs and suggested 
-                selling prices based on your settings.
-              </Text>
-              <Text mt={2} fontSize="sm" color="gray.600">
-                Features:
-                - Detailed cost calculation including materials, print time, and post-processing
-                - Automatic profit margin calculation
-                - Filament tracking per project
-                - Copying of existing projects
-                - Print job history per project
-              </Text>
-            </Box>
+              <Box p={6} borderRadius="lg" borderWidth="1px">
+                <VStack align="start" spacing={4}>
+                  <Flex align="center">
+                    <Icon as={DocumentTextIcon} color="green.500" boxSize={5} mr={2} />
+                    <Heading size="md">2. Create Projects</Heading>
+                  </Flex>
+                  <Text>
+                    Set up your projects with:
+                    • Print specifications
+                    • Material requirements
+                    • Time estimates
+                    • Cost calculations
+                  </Text>
+                </VStack>
+              </Box>
 
-            <Box>
-              <Heading size="sm" mb={2}>👥 Customer Management</Heading>
-              <Text>
-                Keep track of your customers with a complete CRM system. Store contact information, 
-                order history, and special notes for each customer.
-              </Text>
-              <Text mt={2} fontSize="sm" color="gray.600">
-                Features:
-                - Complete customer database with contact information
-                - Integration with sales and invoicing
-                - Customer-specific notes and details
-                - VAT/Tax ID handling
-                - Order history per customer
-              </Text>
-            </Box>
+              <Box p={6} borderRadius="lg" borderWidth="1px">
+                <VStack align="start" spacing={4}>
+                  <Flex align="center">
+                    <Icon as={ClockIcon} color="purple.500" boxSize={5} mr={2} />
+                    <Heading size="md">3. Manage Print Jobs</Heading>
+                  </Flex>
+                  <Text>
+                    Track your prints with:
+                    • Status updates
+                    • Material usage
+                    • Time tracking
+                    • Batch management
+                  </Text>
+                </VStack>
+              </Box>
 
-            <Box>
-              <Heading size="sm" mb={2}>💰 Sales and Invoicing</Heading>
-              <Text>
-                Handle sales and monitor payment status. The system automatically calculates prices 
-                based on material costs, print time, and your desired profit margin.
-              </Text>
-              <Text mt={2} fontSize="sm" color="gray.600">
-                Features:
-                - Automatic invoice numbering (YYYY-XXXX format)
-                - Detailed cost breakdown at point of sale
-                - Profit margin calculation per sale
-                - Payment status tracking (Pending/Paid/Cancelled)
-                - Snapshot of all prices and data at time of sale
-              </Text>
-            </Box>
+              <Box p={6} borderRadius="lg" borderWidth="1px">
+                <VStack align="start" spacing={4}>
+                  <Flex align="center">
+                    <Icon as={CurrencyDollarIcon} color="orange.500" boxSize={5} mr={2} />
+                    <Heading size="md">4. Handle Sales</Heading>
+                  </Flex>
+                  <Text>
+                    Process sales including:
+                    • Invoice generation
+                    • Payment tracking
+                    • Customer management
+                    • Profit calculations
+                  </Text>
+                </VStack>
+              </Box>
+            </SimpleGrid>
+          </Box>
 
-            <Box>
-              <Heading size="sm" mb={2}>📊 Reports and Statistics</Heading>
-              <Text>
-                Get an overview of your business with detailed reports on sales, 
-                material usage, customer activity, and profit. View trends and analyses 
-                that help you optimize your business.
-              </Text>
-              <Text mt={2} fontSize="sm" color="gray.600">
-                Features:
-                - Revenue and profit reports
-                - Most sold products
-                - Customer statistics and activity
-                - Inventory statistics and material usage
-                - Selectable period (week/month/year)
-              </Text>
-            </Box>
-          </VStack>
-        </Box>
+          {/* Tips & Tricks */}
+          <Box>
+            <Heading size="lg" mb={6} textAlign="center">Pro Tips</Heading>
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+              <Box p={6} borderRadius="lg" borderWidth="1px">
+                <VStack align="start" spacing={3}>
+                  <Icon as={CogIcon} color="blue.500" boxSize={6} />
+                  <Heading size="md">Automatic Backups</Heading>
+                  <Text>Enable auto-backup in Settings to protect your data. Backups are stored locally and can be restored if needed.</Text>
+                </VStack>
+              </Box>
 
-        <Divider />
+              <Box p={6} borderRadius="lg" borderWidth="1px">
+                <VStack align="start" spacing={3}>
+                  <Icon as={ChartBarIcon} color="green.500" boxSize={6} />
+                  <Heading size="md">Track Analytics</Heading>
+                  <Text>Use the Reports section to monitor business performance, identify trends, and make data-driven decisions.</Text>
+                </VStack>
+              </Box>
 
-        <Box>
-          <Heading size="md" mb={3}>Support</Heading>
-          <Text>
-            For support and help with PrintStream, contact us on Discord:
-          </Text>
-          <Link href="https://discord.gg/utXE9ER5yK" color="blue.500" isExternal>
-            Join our Discord server
-          </Link>
-        </Box>
+              <Box p={6} borderRadius="lg" borderWidth="1px">
+                <VStack align="start" spacing={3}>
+                  <Icon as={UserGroupIcon} color="purple.500" boxSize={6} />
+                  <Heading size="md">Customer Focus</Heading>
+                  <Text>Maintain detailed customer profiles and track their preferences to provide better service.</Text>
+                </VStack>
+              </Box>
+            </SimpleGrid>
+          </Box>
 
-        <Box>
-          <Heading size="md" mb={3}>Version</Heading>
-          <Text>PrintStream version 0.2.6b</Text>
-          <Text fontSize="sm" color="gray.500">
-            Developed by Jacob M (M4NN3DK)
-          </Text>
-        </Box>
-      </VStack>
+          <Divider />
+
+          {/* Support */}
+          <Box textAlign="center" py={6}>
+            <Heading size="lg" mb={4}>Need Help?</Heading>
+            <Text mb={4}>Join our Discord community for support, tips, and updates:</Text>
+            <Button
+              as={Link}
+              href="https://discord.gg/utXE9ER5yK"
+              isExternal
+              colorScheme="blue"
+              size="lg"
+              mb={6}
+            >
+              Join Discord Community
+            </Button>
+            <Text fontSize="sm">
+              Version 0.2.6 | © 2024 PrintStream. All rights reserved.
+            </Text>
+          </Box>
+        </VStack>
+      </Box>
     </Box>
   );
 };

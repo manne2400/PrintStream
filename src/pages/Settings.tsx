@@ -9,7 +9,15 @@ import initializeDatabase from '../database/setup';
 import { SettingsOperations, Settings as SettingsType, LicenseOperations } from '../database/operations';
 import { useCurrency } from '../context/CurrencyContext';
 import { ipcRenderer } from 'electron';
-import { DownloadIcon, ArrowUpTrayIcon, CurrencyDollarIcon, BuildingOfficeIcon, BanknotesIcon, KeyIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { 
+  ArrowDownTrayIcon, 
+  ArrowUpTrayIcon, 
+  CurrencyDollarIcon, 
+  BuildingOfficeIcon, 
+  BanknotesIcon, 
+  KeyIcon, 
+  Cog6ToothIcon 
+} from '@heroicons/react/24/outline';
 
 const Settings: React.FC = () => {
   const toast = useToast();
@@ -229,7 +237,7 @@ const Settings: React.FC = () => {
       if (backupPath) {
         // Vis bekræftelsesdialog
         const shouldRestore = window.confirm(
-          'Restoring from a backup will replace your current database. This cannot be undone. Are you sure you want to continue?'
+          'Restoring from a backup will replace your current database. This cannot be undone. Are you sure you want to continue? (Restart the application after restoring)'
         );
 
         if (shouldRestore) {
@@ -538,7 +546,7 @@ const Settings: React.FC = () => {
 
               <Flex gap={2}>
                 <Button
-                  leftIcon={<Icon as={DownloadIcon} />}
+                  leftIcon={<Icon as={ArrowDownTrayIcon} />}
                   onClick={handleBackup}
                   colorScheme="blue"
                   variant="outline"

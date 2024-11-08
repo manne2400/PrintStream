@@ -7,7 +7,7 @@ import {
   NumberInput, NumberInputField, NumberInputStepper,
   NumberIncrementStepper, NumberDecrementStepper,
   VStack, Table, Thead, Tbody, Tr, Th, Td,
-  useToast, Divider, IconButton, InputGroup, InputLeftElement
+  useToast, Divider, IconButton, InputGroup, InputLeftElement, Editable, EditablePreview, EditableInput
 } from '@chakra-ui/react';
 import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
@@ -462,7 +462,43 @@ const PrintInventory: React.FC = () => {
               <Tr key={group.project_id}>
                 <Td>{group.project_name}</Td>
                 <Td>{group.date}</Td>
-                <Td isNumeric>{group.total_quantity}</Td>
+                <Td isNumeric>
+                  <Editable
+                    defaultValue={group.total_quantity.toString()}
+                    onSubmit={async (value) => {
+                      const newQuantity = parseInt(value);
+                      if (!isNaN(newQuantity) && group.prints[0]?.id) {
+                        try {
+                          const db = await initializeDatabase();
+                          const ops = new PrintJobOperations(db);
+                          await ops.updatePrintJob(group.prints[0].id, {
+                            quantity: newQuantity
+                          });
+                          loadPrintJobs(); // Genindlæs data
+                          toast({
+                            title: 'Success',
+                            description: 'Quantity updated successfully',
+                            status: 'success',
+                            duration: 2000,
+                            isClosable: true,
+                          });
+                        } catch (err) {
+                          console.error('Failed to update quantity:', err);
+                          toast({
+                            title: 'Error',
+                            description: 'Failed to update quantity',
+                            status: 'error',
+                            duration: 5000,
+                            isClosable: true,
+                          });
+                        }
+                      }
+                    }}
+                  >
+                    <EditablePreview />
+                    <EditableInput type="number" min="0" />
+                  </Editable>
+                </Td>
                 <Td onClick={() => setStatusModalData(group.prints[0])} style={{ cursor: 'pointer' }}>
                   <Text color={statusColors[group.status]} fontWeight="medium">
                     {statusLabels[group.status]}
