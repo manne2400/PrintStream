@@ -821,50 +821,46 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   };
 
   return (
-    <Box>
-      <Flex justify="space-between" align="center" mb={6}>
-        <Box>
-          <Heading size="lg" fontWeight="semibold" color="gray.800">
-            Filament
-          </Heading>
-          <Text mt={1} color="gray.500" fontSize="sm">
-            Manage your filaments
-          </Text>
-        </Box>
-        <Flex gap={2}>
-          <Button
-            leftIcon={<Icon as={ArrowPathIcon} boxSize={5} />}
-            colorScheme="gray"
-            size="md"
-            onClick={handleRefresh}
-          >
-            Refresh
-          </Button>
-          <Button
-            leftIcon={<Icon as={PlusIcon} boxSize={5} />}
-            colorScheme="blue"
-            size="md"
-            onClick={onOpen}
-          >
-            Add Filament
-          </Button>
+    <Box p={4}>
+      <Box variant="stats-card">
+        <Flex justify="space-between" align="center" mb={6}>
+          <Box>
+            <Heading size="lg" fontWeight="semibold" color="gray.800">
+              Filaments
+            </Heading>
+            <Text mt={1} color="gray.500" fontSize="sm">
+              Manage your filament inventory
+            </Text>
+          </Box>
+          <Flex gap={2}>
+            <IconButton
+              aria-label="Refresh"
+              icon={<Icon as={ArrowPathIcon} />}
+              onClick={handleRefresh}
+            />
+            <Button
+              leftIcon={<Icon as={PlusIcon} boxSize={5} />}
+              colorScheme="blue"
+              onClick={onOpen}
+            >
+              Add New Filament
+            </Button>
+          </Flex>
         </Flex>
-      </Flex>
 
-      <Box mb={4}>
-        <InputGroup>
-          <InputLeftElement pointerEvents="none">
-            <Icon as={MagnifyingGlassIcon} color="gray.400" />
-          </InputLeftElement>
-          <Input
-            placeholder="Search filaments..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </InputGroup>
-      </Box>
+        <Box mb={4}>
+          <InputGroup>
+            <InputLeftElement pointerEvents="none">
+              <Icon as={MagnifyingGlassIcon} color="gray.400" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search filaments..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </InputGroup>
+        </Box>
 
-      <Box bg="white" p={6} rounded="lg" shadow="sm">
         <Table variant="simple">
           <Thead>
             <Tr>
