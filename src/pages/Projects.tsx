@@ -354,6 +354,12 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ isOpen, onClose, pr
   );
 };
 
+// Tilføj nye interfaces for tid
+interface TimeInput {
+  hours: number;
+  minutes: number;
+}
+
 const Projects: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -381,6 +387,14 @@ const Projects: React.FC = () => {
 
   // Tilføj currency hook
   const { currency } = useCurrency();
+
+  const [printTime, setPrintTime] = useState<TimeInput>({ hours: 0, minutes: 0 });
+  const [postProcessingTime, setPostProcessingTime] = useState<TimeInput>({ hours: 0, minutes: 0 });
+
+  // Hjælpefunktion til at konvertere timer og minutter til total minutter
+  const convertToMinutes = (time: TimeInput): number => {
+    return (time.hours * 60) + time.minutes;
+  };
 
   useEffect(() => {
     loadProjects();
@@ -444,12 +458,15 @@ const Projects: React.FC = () => {
       const db = await initializeDatabase();
       const ops = new ProjectOperations(db);
       
-      // Tilføj projekt
+      // Konverter tid til minutter før gemning
+      const totalPrintMinutes = convertToMinutes(printTime);
+      const totalPostProcessingMinutes = convertToMinutes(postProcessingTime);
+      
       const projectId = await ops.addProject({
         name: formData.name,
         description: formData.description,
-        print_time: formData.printTime,
-        post_processing_time: formData.postProcessingTime,
+        print_time: totalPrintMinutes,
+        post_processing_time: totalPostProcessingMinutes,
         extra_costs: formData.extraCosts
       });
 
@@ -762,37 +779,77 @@ const Projects: React.FC = () => {
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Print Time (minutes)</FormLabel>
-                <NumberInput
-                  value={formData.printTime}
-                  onChange={(value) => setFormData(prev => ({ ...prev, printTime: parseInt(value) }))}
-                  min={0}
-                >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
+                <FormLabel>Print Time</FormLabel>
+                <Flex gap={4}>
+                  <Box flex="1">
+                    <FormLabel fontSize="sm">Hours</FormLabel>
+                    <NumberInput
+                      value={printTime.hours}
+                      onChange={(value) => setPrintTime(prev => ({ ...prev, hours: parseInt(value) || 0 }))}
+                      min={0}
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </Box>
+                  <Box flex="1">
+                    <FormLabel fontSize="sm">Minutes</FormLabel>
+                    <NumberInput
+                      value={printTime.minutes}
+                      onChange={(value) => setPrintTime(prev => ({ ...prev, minutes: parseInt(value) || 0 }))}
+                      min={0}
+                      max={59}
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </Box>
+                </Flex>
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Post-Processing Time (minutes)</FormLabel>
-                <NumberInput
-                  value={formData.postProcessingTime}
-                  onChange={(value) => setFormData(prev => ({ ...prev, postProcessingTime: parseInt(value) }))}
-                  min={0}
-                >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
+                <FormLabel>Post-Processing Time</FormLabel>
+                <Flex gap={4}>
+                  <Box flex="1">
+                    <FormLabel fontSize="sm">Hours</FormLabel>
+                    <NumberInput
+                      value={postProcessingTime.hours}
+                      onChange={(value) => setPostProcessingTime(prev => ({ ...prev, hours: parseInt(value) || 0 }))}
+                      min={0}
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </Box>
+                  <Box flex="1">
+                    <FormLabel fontSize="sm">Minutes</FormLabel>
+                    <NumberInput
+                      value={postProcessingTime.minutes}
+                      onChange={(value) => setPostProcessingTime(prev => ({ ...prev, minutes: parseInt(value) || 0 }))}
+                      min={0}
+                      max={59}
+                    >
+                      <NumberInputField />
+                      <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                      </NumberInputStepper>
+                    </NumberInput>
+                  </Box>
+                </Flex>
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Extra Costs ($)</FormLabel>
+                <FormLabel>Extra Costs ({currency})</FormLabel>
                 <NumberInput
                   value={formData.extraCosts}
                   onChange={(value) => setFormData(prev => ({ ...prev, extraCosts: parseFloat(value) }))}
