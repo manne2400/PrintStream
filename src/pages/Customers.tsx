@@ -330,46 +330,50 @@ const Customers: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Flex justify="space-between" align="center" mb={6}>
-        <Box>
-          <Heading size="lg" fontWeight="semibold" color="gray.800">
-            Customers
-          </Heading>
-          <Text mt={1} color="gray.500" fontSize="sm">
-            Manage your customers
-          </Text>
+    <Box p={4}>
+      <Box variant="stats-card">
+        <Flex justify="space-between" align="center" mb={6}>
+          <Box>
+            <Heading size="lg" fontWeight="semibold" color="gray.800">
+              Customers
+            </Heading>
+            <Text mt={1} color="gray.500" fontSize="sm">
+              Manage your customers
+            </Text>
+          </Box>
+          <Button
+            leftIcon={<Icon as={PlusIcon} boxSize={5} />}
+            colorScheme="blue"
+            onClick={() => setIsOpen(true)}
+          >
+            Add New Customer
+          </Button>
+        </Flex>
+
+        <Box mb={4}>
+          <InputGroup>
+            <InputLeftElement pointerEvents="none">
+              <Icon as={MagnifyingGlassIcon} color="gray.400" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search customers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </InputGroup>
         </Box>
-        <Button
-          leftIcon={<Icon as={PlusIcon} boxSize={5} />}
-          colorScheme="blue"
-          size="md"
-          onClick={() => setIsOpen(true)}
-        >
-          Add Customer
-        </Button>
-      </Flex>
 
-      <Box mb={4}>
-        <InputGroup>
-          <InputLeftElement pointerEvents="none">
-            <Icon as={MagnifyingGlassIcon} color="gray.400" />
-          </InputLeftElement>
-          <Input
-            placeholder="Search customers..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </InputGroup>
-      </Box>
-
-      <Box bg="white" p={6} rounded="lg" shadow="sm">
         <Table variant="simple">
           <Thead>
             <Tr>
               <Th cursor="pointer" onClick={() => handleSort('name')}>
                 <Flex align="center">
                   Name {renderSortIcon('name')}
+                </Flex>
+              </Th>
+              <Th cursor="pointer" onClick={() => handleSort('contact_person')}>
+                <Flex align="center">
+                  Contact Person {renderSortIcon('contact_person')}
                 </Flex>
               </Th>
               <Th cursor="pointer" onClick={() => handleSort('email')}>
@@ -382,16 +386,6 @@ const Customers: React.FC = () => {
                   Phone {renderSortIcon('phone')}
                 </Flex>
               </Th>
-              <Th cursor="pointer" onClick={() => handleSort('address')}>
-                <Flex align="center">
-                  Address {renderSortIcon('address')}
-                </Flex>
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('vat_id')}>
-                <Flex align="center">
-                  VAT ID {renderSortIcon('vat_id')}
-                </Flex>
-              </Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -399,14 +393,9 @@ const Customers: React.FC = () => {
             {sortedCustomers.map((customer) => (
               <Tr key={customer.id}>
                 <Td>{customer.name}</Td>
+                <Td>{customer.contact_person}</Td>
                 <Td>{customer.email}</Td>
                 <Td>{customer.phone}</Td>
-                <Td>
-                  <Text whiteSpace="pre-line">
-                    {customer.address}
-                  </Text>
-                </Td>
-                <Td>{customer.vat_id}</Td>
                 <Td>
                   <Flex gap={2}>
                     <IconButton
