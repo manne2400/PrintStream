@@ -310,7 +310,7 @@ Databasen bruger SQLite3 med følgende tabeller:
 │   │
 │   ├── types/
 │   │   └── (TypeScript definitioner)
-│   │
+│   ��
 │   ├── assets/
 │   │   └── (Statiske filer)
 │   │
@@ -380,3 +380,141 @@ Generering: Brug generateLicenseKey funktionen til at oprette nøgler.
 Validering: Brug validateLicenseKey til at sikre gyldighed.
 Opbevaring: Licensnøgler gemmes i licenses.json.
 Disse punkter kan hjælpe med at sikre en glat udviklings- og vedligeholdelsesproces. Hvis der er noget specifikt du vil have uddybet, så lad mig vide det!
+
+## Project Structure
+- `/src`: Source code
+  - `/components`: Reusable React components
+  - `/pages`: Page components
+  - `/context`: React context providers
+  - `/database`: Database operations and setup
+  - `/utils`: Utility functions
+- `/public`: Static files
+- `/scripts`: Build and utility scripts
+
+## Key Components
+- `Layout.tsx`: Main layout component with sidebar and header
+- `Sidebar.tsx`: Navigation sidebar
+- `Header.tsx`: Top header with notifications
+- `ProtectedRoute.tsx`: Route protection for authentication
+
+## Database Structure
+- `filaments`: Stores filament information
+- `projects`: Stores project information
+- `project_filaments`: Many-to-many relation between projects and filaments
+- `customers`: Customer information
+- `print_jobs`: Print job tracking
+- `sales`: Sales records
+- `settings`: Application settings
+- `license`: License information
+- `used_licenses`: Tracks used license keys
+
+## Theme System
+- Uses Chakra UI for theming
+- Custom theme configuration in `theme.ts`
+- Dark mode support via `useColorMode` hook
+- Custom variants like `stats-card` for consistent styling
+- Color mode toggle in Settings page
+
+### Dark Mode Implementation
+- Use `useColorModeValue` for dynamic colors
+- Define colors in theme configuration
+- Create consistent component variants
+- Handle background, text, and border colors
+- Consider contrast and readability
+
+### Common Dark Mode Patterns
+1. Box components: Use `variant="stats-card"` for consistent styling
+2. Text colors: Use `useColorModeValue` for dynamic text colors
+3. Background colors: Define in theme for light/dark modes
+4. Border colors: Adjust for better contrast in dark mode
+
+### Lessons Learned
+1. Always test dark mode on all components
+2. Use theme variants for consistent styling
+3. Consider accessibility and contrast
+4. Test all interactive elements in both modes
+5. Keep color definitions centralized in theme
+6. Use semantic color names in theme
+7. Test transitions between modes
+
+## License System
+- 30-day trial period
+- License key validation
+- Installation tracking
+- Used license keys database
+- Automatic expiry check
+
+## Error Handling
+- Toast notifications for user feedback
+- Console logging for debugging
+- Try-catch blocks for database operations
+- Graceful error recovery
+
+## State Management
+- React Context for global state
+- Local state for component-specific data
+- Database for persistent storage
+
+## Currency Handling
+- Supports multiple currencies
+- Currency selection in settings
+- Consistent formatting across app
+
+## Best Practices
+1. Use TypeScript for type safety
+2. Implement proper error handling
+3. Follow consistent naming conventions
+4. Keep components modular and reusable
+5. Document complex functionality
+6. Use proper database indexing
+7. Implement proper validation
+8. Follow security best practices
+9. Test thoroughly before deployment
+10. Keep dependencies updated
+
+## Common Issues and Solutions
+1. Database connection issues:
+   - Check file permissions
+   - Verify path to database file
+   - Ensure proper initialization
+
+2. License validation:
+   - Verify key format
+   - Check expiration dates
+   - Handle network errors
+
+3. Dark mode inconsistencies:
+   - Use theme variants consistently
+   - Test all components in both modes
+   - Check contrast ratios
+   - Verify component transitions
+
+4. Performance issues:
+   - Implement proper indexing
+   - Use pagination for large datasets
+   - Optimize database queries
+   - Implement caching where appropriate
+
+## Development Guidelines
+1. Follow TypeScript best practices
+2. Use consistent code formatting
+3. Write clear documentation
+4. Implement proper testing
+5. Use meaningful commit messages
+6. Review code before merging
+7. Keep dependencies updated
+8. Monitor performance
+9. Follow security guidelines
+10. Maintain backup procedures
+
+## Future Improvements
+1. Add more currency options
+2. Implement advanced reporting
+3. Add data export features
+4. Enhance user interface
+5. Add more customization options
+6. Implement backup system
+7. Add multi-language support
+8. Enhance security features
+9. Add more analytics
+10. Implement automated testing
