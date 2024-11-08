@@ -17,8 +17,11 @@ function createWindow() {
 
   win.loadFile(indexPath);
   
-  // Åbn DevTools og maksimer vinduet
-  win.webContents.openDevTools();
+  // Kun åbn DevTools i development mode
+  if (isDev) {
+    win.webContents.openDevTools();
+  }
+  
   win.maximize();
 
   // Log eventuelle load fejl
