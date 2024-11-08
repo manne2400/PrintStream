@@ -248,6 +248,17 @@ const initializeDatabase = async (): Promise<Database> => {
     );
   `);
 
+  // Tilføj used_licenses tabel
+  await exec(`
+    CREATE TABLE IF NOT EXISTS used_licenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      license_key TEXT NOT NULL UNIQUE,
+      first_used_date TEXT NOT NULL,
+      installation_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   // Indsæt installations dato hvis tabellen er tom
   const licenseCount = await get('SELECT COUNT(*) as count FROM license');
   if (licenseCount.count === 0) {
@@ -272,6 +283,17 @@ const initializeDatabase = async (): Promise<Database> => {
       throw err;
     }
   }
+
+  // Tilføj dette efter license tabel oprettelsen
+  await exec(`
+    CREATE TABLE IF NOT EXISTS used_licenses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      license_key TEXT NOT NULL UNIQUE,
+      first_used_date TEXT NOT NULL,
+      installation_id TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
 
   return { run, get, all, exec }
 }
