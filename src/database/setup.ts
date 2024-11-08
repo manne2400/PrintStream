@@ -163,6 +163,19 @@ const initializeDatabase = async (): Promise<Database> => {
     }
   }
 
+  // Tilføj auto_backup kolonne til settings tabellen
+  try {
+    await exec(`
+      ALTER TABLE settings 
+      ADD COLUMN auto_backup BOOLEAN DEFAULT 0;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
+
   // Indsæt standard indstillinger hvis tabellen er tom
   const settingsCount = await get('SELECT COUNT(*) as count FROM settings');
   if (settingsCount.count === 0) {

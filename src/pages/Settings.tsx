@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Heading, Text, VStack, FormControl, FormLabel,
   Input, NumberInput, NumberInputField, NumberInputStepper,
   NumberIncrementStepper, NumberDecrementStepper,
-  Select, Button, useToast, Divider, Textarea, useColorMode, Switch
+  Select, Button, useToast, Divider, Textarea, useColorMode, Switch, Icon, Flex
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
 import { SettingsOperations, Settings as SettingsType, LicenseOperations } from '../database/operations';
 import { useCurrency } from '../context/CurrencyContext';
+import { ipcRenderer } from 'electron';
+import { DownloadIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 
 const Settings: React.FC = () => {
   const toast = useToast();
@@ -39,12 +41,24 @@ const Settings: React.FC = () => {
 
   const { colorMode, toggleColorMode } = useColorMode();
 
+  const [autoBackup, setAutoBackup] = useState(false);
+
   useEffect(() => {
     loadSettings();
   }, []);
 
   useEffect(() => {
     loadLicenseInfo();
+  }, []);
+
+  useEffect(() => {
+    const loadAutoBackupSetting = async () => {
+      const db = await initializeDatabase();
+      const ops = new SettingsOperations(db);
+      const settings = await ops.getSettings();
+      setAutoBackup(settings.auto_backup || false);
+    };
+    loadAutoBackupSetting();
   }, []);
 
   const loadSettings = async () => {
@@ -144,6 +158,104 @@ const Settings: React.FC = () => {
       });
     }
   };
+
+  const handleBackup = useCallback(async () => {
+    try {
+      const savePath = await ipcRenderer.invoke('show-save-dialog', {
+        defaultPath: `printstream_backup_${new Date().toISOString().split('T')[0]}.db`,
+        filters: [{ name: 'Database Files', extensions: ['db'] }]
+      });
+
+      if (savePath) {
+        await ipcRenderer.invoke('backup-database', savePath);
+        toast({
+          title: 'Success',
+          description: 'Database backup created successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to backup database:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to create database backup',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [toast]);
+
+  const handleAutoBackupChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.checked;
+    try {
+      const db = await initializeDatabase();
+      const ops = new SettingsOperations(db);
+      await ops.updateSettings({ auto_backup: newValue });
+      setAutoBackup(newValue);
+      toast({
+        title: 'Success',
+        description: `Auto backup ${newValue ? 'enabled' : 'disabled'}`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      console.error('Failed to update auto backup setting:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to update auto backup setting',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleRestore = useCallback(async () => {
+    try {
+      const backupPath = await ipcRenderer.invoke('show-open-dialog');
+      
+      if (backupPath) {
+        // Vis bekræftelsesdialog
+        const shouldRestore = window.confirm(
+          'Restoring from a backup will replace your current database. This cannot be undone. Are you sure you want to continue?'
+        );
+
+        if (shouldRestore) {
+          const result = await ipcRenderer.invoke('restore-database', backupPath);
+          
+          if (result.success) {
+            toast({
+              title: 'Success',
+              description: 'Database restored successfully. The application will now restart.',
+              status: 'success',
+              duration: 3000,
+              isClosable: true,
+            });
+            
+            // Giv brugeren tid til at se success beskeden før restart
+            setTimeout(() => {
+              ipcRenderer.invoke('restart-app');
+            }, 3000);
+          } else {
+            throw new Error(result.error);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to restore database:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to restore database',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  }, [toast]);
 
   // Tilføj valuta konstant
   const CURRENCIES = [
@@ -332,7 +444,7 @@ const Settings: React.FC = () => {
         </Box>
 
         <Box variant="stats-card">
-          <Heading size="md" mb={4}>Appearance</Heading>
+          <Heading size="md" mb={4}>Appearance & Backup</Heading>
           <VStack spacing={4} align="stretch">
             <FormControl display="flex" alignItems="center">
               <FormLabel htmlFor="dark-mode" mb="0">
@@ -344,6 +456,41 @@ const Settings: React.FC = () => {
                 onChange={toggleColorMode}
               />
             </FormControl>
+
+            <Divider />
+
+            <FormControl display="flex" alignItems="center">
+              <FormLabel htmlFor="auto-backup" mb="0">
+                Auto Backup on Startup
+              </FormLabel>
+              <Switch
+                id="auto-backup"
+                isChecked={autoBackup}
+                onChange={handleAutoBackupChange}
+              />
+            </FormControl>
+
+            <Flex gap={2}>
+              <Button
+                leftIcon={<Icon as={DownloadIcon} />}
+                onClick={handleBackup}
+                colorScheme="blue"
+                variant="outline"
+                flex="1"
+              >
+                Create Backup
+              </Button>
+              
+              <Button
+                leftIcon={<Icon as={ArrowUpTrayIcon} />}
+                onClick={handleRestore}
+                colorScheme="blue"
+                variant="outline"
+                flex="1"
+              >
+                Restore Backup
+              </Button>
+            </Flex>
           </VStack>
         </Box>
       </VStack>
