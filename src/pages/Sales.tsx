@@ -55,6 +55,19 @@ interface DeleteSaleModalProps {
   onConfirm: () => Promise<void>;
 }
 
+interface GroupedSale {
+  invoice_number: string;
+  sale_date: string;
+  customer_name: string | null;
+  items: {
+    project_name: string;
+    quantity: number;
+    total_price: number;
+  }[];
+  total_price: number;
+  payment_status: 'pending' | 'paid' | 'cancelled';
+}
+
 const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
   const [formData, setFormData] = useState<FormData>({
     customerId: '',
@@ -489,22 +502,38 @@ const Sales: React.FC = () => {
       <Icon as={ChevronDownIcon} w={4} h={4} />;
   };
 
-  const sortedSales = useMemo(() => {
-    return [...sales].sort((a, b) => {
-      if (sortConfig.key === 'date') {
-        return sortConfig.direction === 'asc' ? a.sale_date - b.sale_date : b.sale_date - a.sale_date;
-      } else if (sortConfig.key === 'customer') {
-        return sortConfig.direction === 'asc' ? a.customer_name.localeCompare(b.customer_name) : b.customer_name.localeCompare(a.customer_name);
-      } else if (sortConfig.key === 'project') {
-        return sortConfig.direction === 'asc' ? a.project_name.localeCompare(b.project_name) : b.project_name.localeCompare(a.project_name);
-      } else if (sortConfig.key === 'total') {
-        return sortConfig.direction === 'asc' ? a.total_price - b.total_price : b.total_price - a.total_price;
-      } else if (sortConfig.key === 'status') {
-        return sortConfig.direction === 'asc' ? a.payment_status.localeCompare(b.payment_status) : b.payment_status.localeCompare(a.payment_status);
+  const groupedSales = useMemo(() => {
+    const groups = new Map<string, GroupedSale>();
+    
+    sales.forEach(sale => {
+      const existing = groups.get(sale.invoice_number);
+      if (existing) {
+        // Tilføj til eksisterende gruppe
+        existing.items.push({
+          project_name: sale.project_name,
+          quantity: sale.quantity,
+          total_price: sale.total_price
+        });
+        existing.total_price += sale.total_price;
+      } else {
+        // Opret ny gruppe
+        groups.set(sale.invoice_number, {
+          invoice_number: sale.invoice_number,
+          sale_date: sale.sale_date,
+          customer_name: sale.customer_name,
+          items: [{
+            project_name: sale.project_name,
+            quantity: sale.quantity,
+            total_price: sale.total_price
+          }],
+          total_price: sale.total_price,
+          payment_status: sale.payment_status
+        });
       }
-      return 0;
     });
-  }, [sales, sortConfig]);
+
+    return Array.from(groups.values());
+  }, [sales]);
 
   const handleUpdatePaymentStatus = async (id: number, status: 'pending' | 'paid' | 'cancelled') => {
     try {
@@ -602,45 +631,25 @@ const Sales: React.FC = () => {
         <Table variant="simple">
           <Thead>
             <Tr>
-              <Th cursor="pointer" onClick={() => handleSort('invoice_number')}>
-                <Flex align="center">
-                  Invoice # {renderSortIcon('invoice_number')}
-                </Flex>
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('sale_date')}>
-                <Flex align="center">
-                  Date {renderSortIcon('sale_date')}
-                </Flex>
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('customer_name')}>
-                <Flex align="center">
-                  Customer {renderSortIcon('customer_name')}
-                </Flex>
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('project_name')}>
-                <Flex align="center">
-                  Project {renderSortIcon('project_name')}
-                </Flex>
-              </Th>
-              <Th isNumeric cursor="pointer" onClick={() => handleSort('total_price')}>
-                <Flex align="center" justify="flex-end">
-                  Total {renderSortIcon('total_price')}
-                </Flex>
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('payment_status')}>
-                <Flex align="center">
-                  Status {renderSortIcon('payment_status')}
-                </Flex>
-              </Th>
+              <Th>Invoice #</Th>
+              <Th>Date</Th>
+              <Th>Customer</Th>
+              <Th>Projects</Th>
+              <Th isNumeric>Total</Th>
+              <Th>Status</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {sortedSales.map((sale) => (
-              <Tr key={sale.id}>
+            {groupedSales.map((sale) => (
+              <Tr key={sale.invoice_number}>
                 <Td>{sale.invoice_number}</Td>
                 <Td>{new Date(sale.sale_date).toLocaleDateString()}</Td>
                 <Td>{sale.customer_name || 'N/A'}</Td>
-                <Td>{sale.project_name}</Td>
+                <Td>
+                  {sale.items.map(item => 
+                    `${item.project_name} (${item.quantity}x)`
+                  ).join(', ')}
+                </Td>
                 <Td isNumeric>{currency} {sale.total_price.toFixed(2)}</Td>
                 <Td>
                   <Flex gap={2}>
@@ -653,7 +662,7 @@ const Sales: React.FC = () => {
                         sale.payment_status === 'pending' ? 'yellow' :
                         'red'
                       }
-                      onClick={() => setSelectedSale(sale)}
+                      onClick={() => setSelectedSale(sale as any)}
                     >
                       {sale.payment_status.toUpperCase()}
                     </Button>
@@ -663,7 +672,7 @@ const Sales: React.FC = () => {
                       size="sm"
                       variant="ghost"
                       colorScheme="red"
-                      onClick={() => setDeleteSale(sale)}
+                      onClick={() => setDeleteSale(sale as any)}
                     />
                   </Flex>
                 </Td>
