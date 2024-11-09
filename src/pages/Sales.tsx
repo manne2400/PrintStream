@@ -56,6 +56,7 @@ interface DeleteSaleModalProps {
 }
 
 interface GroupedSale {
+  id: number;
   invoice_number: string;
   sale_date: string;
   customer_name: string | null;
@@ -591,11 +592,11 @@ const Sales: React.FC = () => {
           quantity: sale.quantity,
           total_price: sale.total_price
         });
-        // Opdater kun items total, IKKE shipping cost
         existing.items_total += sale.total_price;
       } else {
         // Opret ny gruppe
         groups.set(sale.invoice_number, {
+          id: sale.id!,
           invoice_number: sale.invoice_number,
           sale_date: sale.sale_date,
           customer_name: sale.customer_name,
@@ -604,15 +605,15 @@ const Sales: React.FC = () => {
             quantity: sale.quantity,
             total_price: sale.total_price
           }],
-          items_total: sale.total_price, // Ny property til items total
+          items_total: sale.total_price,
           shipping_cost: sale.shipping_cost || 0,
-          total_price: 0, // Vi beregner denne senere
+          total_price: 0,
           payment_status: sale.payment_status
         });
       }
     });
 
-    // Beregn total_price for hver gruppe (items_total + shipping_cost)
+    // Beregn total_price for hver gruppe
     for (const group of groups.values()) {
       group.total_price = group.items_total + group.shipping_cost;
     }

@@ -616,7 +616,33 @@ export class SalesOperations {
   }
 
   async deleteSale(id: number): Promise<void> {
-    await this.db.run('DELETE FROM sales WHERE id = ?', [id]);
+    try {
+      // Start en transaktion
+      await this.db.run('BEGIN TRANSACTION');
+
+      // Først find invoice_number for det salg vi vil slette
+      const sale = await this.db.get(
+        'SELECT invoice_number FROM sales WHERE id = ?',
+        [id]
+      );
+
+      if (!sale?.invoice_number) {
+        throw new Error('Sale not found');
+      }
+
+      // Slet alle salg med samme invoice_number
+      await this.db.run(
+        'DELETE FROM sales WHERE invoice_number = ?',
+        [sale.invoice_number]
+      );
+
+      // Commit transaktionen
+      await this.db.run('COMMIT');
+    } catch (err) {
+      // Hvis noget går galt, ruller vi tilbage
+      await this.db.run('ROLLBACK');
+      throw err;
+    }
   }
 }
 
