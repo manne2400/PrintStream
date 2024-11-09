@@ -302,6 +302,13 @@ export class CustomerOperations {
       );
     });
   }
+
+  async getCustomerByName(name: string): Promise<Customer | null> {
+    return this.db.get(
+      'SELECT * FROM customers WHERE name = ?',
+      [name]
+    );
+  }
 }
 
 export class SettingsOperations {

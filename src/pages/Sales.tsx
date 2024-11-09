@@ -7,7 +7,7 @@ import {
   FormControl, FormLabel, Select, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper,
   VStack, Textarea, Badge, Divider, Checkbox, IconButton, Grid
 } from '@chakra-ui/react';
-import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon, TrashIcon, MinusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon, TrashIcon, MinusIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { SalesOperations, ProjectOperations, FilamentOperations } from '../database/operations';
 import { PrintJobOperations } from '../database/operations';
@@ -69,6 +69,43 @@ interface GroupedSale {
   shipping_cost: number;
   total_price: number;
   payment_status: 'pending' | 'paid' | 'cancelled';
+}
+
+interface InvoiceData {
+  invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  customerInfo: {
+    name: string;
+    address: string;
+    email: string;
+    phone: string;
+    vatId: string;
+  } | null;
+  companyInfo: {
+    name: string;
+    address: string;
+    email: string;
+    phone: string;
+    vatId: string;
+    bankDetails: string;
+  };
+  items: {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }[];
+  shipping: number;
+  subtotal: number;
+  total: number;
+  currency: string;
+}
+
+interface PrintInvoiceModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  invoiceData: InvoiceData;
 }
 
 const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
@@ -532,6 +569,126 @@ const DeleteSaleModal: React.FC<DeleteSaleModalProps> = ({ isOpen, onClose, sale
   );
 };
 
+const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({ isOpen, onClose, invoiceData }) => {
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Invoice ${invoiceData.invoiceNumber}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .invoice-header { display: flex; justify-content: space-between; margin-bottom: 40px; }
+            .company-info { text-align: right; }
+            .customer-info { margin-bottom: 40px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+            .totals { text-align: right; }
+            .totals div { margin: 5px 0; }
+            @media print {
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-header">
+            <div>
+              <h1>INVOICE</h1>
+              <div>Invoice #: ${invoiceData.invoiceNumber}</div>
+              <div>Date: ${invoiceData.date}</div>
+              <div>Due Date: ${invoiceData.dueDate}</div>
+            </div>
+            <div class="company-info">
+              <h3>${invoiceData.companyInfo.name}</h3>
+              <div>${invoiceData.companyInfo.address}</div>
+              <div>Phone: ${invoiceData.companyInfo.phone}</div>
+              <div>Email: ${invoiceData.companyInfo.email}</div>
+              <div>VAT: ${invoiceData.companyInfo.vatId}</div>
+            </div>
+          </div>
+
+          <div class="customer-info">
+            <h3>Bill To:</h3>
+            ${invoiceData.customerInfo ? `
+              <div>${invoiceData.customerInfo.name}</div>
+              <div>${invoiceData.customerInfo.address}</div>
+              <div>Phone: ${invoiceData.customerInfo.phone}</div>
+              <div>Email: ${invoiceData.customerInfo.email}</div>
+              <div>VAT: ${invoiceData.customerInfo.vatId}</div>
+            ` : 'N/A'}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${invoiceData.items.map(item => `
+                <tr>
+                  <td>${item.description}</td>
+                  <td>${item.quantity}</td>
+                  <td>${invoiceData.currency} ${item.unitPrice.toFixed(2)}</td>
+                  <td>${invoiceData.currency} ${item.total.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="totals">
+            <div>Subtotal: ${invoiceData.currency} ${invoiceData.subtotal.toFixed(2)}</div>
+            <div>Shipping: ${invoiceData.currency} ${invoiceData.shipping.toFixed(2)}</div>
+            <div><strong>Total: ${invoiceData.currency} ${invoiceData.total.toFixed(2)}</strong></div>
+          </div>
+
+          <div style="margin-top: 40px;">
+            <h4>Payment Details:</h4>
+            <div>${invoiceData.companyInfo.bankDetails}</div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Print Invoice</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <Text mb={4}>Review the invoice before printing:</Text>
+          <Box p={4} borderWidth={1} borderRadius="md">
+            <Text>Invoice #: {invoiceData.invoiceNumber}</Text>
+            <Text>Date: {invoiceData.date}</Text>
+            <Text>Customer: {invoiceData.customerInfo?.name || 'N/A'}</Text>
+            <Text>Total: {invoiceData.currency} {invoiceData.total.toFixed(2)}</Text>
+          </Box>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button colorScheme="blue" onClick={handlePrint}>
+            Print Invoice
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 const Sales: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -541,6 +698,7 @@ const Sales: React.FC = () => {
   const { currency } = useCurrency();
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [deleteSale, setDeleteSale] = useState<Sale | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
 
   useEffect(() => {
     loadSales();
@@ -680,6 +838,53 @@ const Sales: React.FC = () => {
     }
   };
 
+  const getInvoiceData = async (sale: GroupedSale): Promise<InvoiceData> => {
+    const db = await initializeDatabase();
+    const settingsOps = new SettingsOperations(db);
+    const customerOps = new CustomerOperations(db);
+    
+    const settings = await settingsOps.getSettings();
+    let customerInfo = null;
+    
+    if (sale.customer_name) {
+      const customer = await customerOps.getCustomerByName(sale.customer_name);
+      if (customer) {
+        customerInfo = {
+          name: customer.name,
+          address: customer.address,
+          email: customer.email,
+          phone: customer.phone,
+          vatId: customer.vat_id
+        };
+      }
+    }
+
+    return {
+      invoiceNumber: sale.invoice_number,
+      date: new Date(sale.sale_date).toLocaleDateString(),
+      dueDate: new Date(new Date(sale.sale_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      customerInfo,
+      companyInfo: {
+        name: settings.company_name,
+        address: settings.company_address,
+        email: settings.company_email,
+        phone: settings.company_phone,
+        vatId: settings.vat_id,
+        bankDetails: settings.bank_details
+      },
+      items: sale.items.map(item => ({
+        description: item.project_name,
+        quantity: item.quantity,
+        unitPrice: item.total_price / item.quantity,
+        total: item.total_price
+      })),
+      shipping: sale.shipping_cost,
+      subtotal: sale.items_total,
+      total: sale.total_price,
+      currency: settings.currency
+    };
+  };
+
   return (
     <Box p={4}>
       <Box variant="stats-card">
@@ -755,6 +960,17 @@ const Sales: React.FC = () => {
                       {sale.payment_status.toUpperCase()}
                     </Button>
                     <IconButton
+                      aria-label="Print invoice"
+                      icon={<Icon as={PrinterIcon} />}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="blue"
+                      onClick={async () => {
+                        const invoiceData = await getInvoiceData(sale);
+                        setSelectedInvoice(invoiceData);
+                      }}
+                    />
+                    <IconButton
                       aria-label="Delete sale"
                       icon={<Icon as={TrashIcon} />}
                       size="sm"
@@ -791,6 +1007,13 @@ const Sales: React.FC = () => {
           onClose={() => setDeleteSale(null)}
           sale={deleteSale}
           onConfirm={handleDelete}
+        />
+      )}
+      {selectedInvoice && (
+        <PrintInvoiceModal
+          isOpen={selectedInvoice !== null}
+          onClose={() => setSelectedInvoice(null)}
+          invoiceData={selectedInvoice}
         />
       )}
     </Box>
