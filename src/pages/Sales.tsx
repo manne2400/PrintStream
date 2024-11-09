@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box, Flex, Heading, Text, Button, Icon,
   Table, Thead, Tbody, Tr, Th, Td,
@@ -64,6 +64,8 @@ interface GroupedSale {
     quantity: number;
     total_price: number;
   }[];
+  items_total: number;
+  shipping_cost: number;
   total_price: number;
   payment_status: 'pending' | 'paid' | 'cancelled';
 }
@@ -81,6 +83,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
   const [customers, setCustomers] = useState<Array<{ id: number; name: string }>>([]);
   const toast = useToast();
   const { currency } = useCurrency();
+  const [shippingCost, setShippingCost] = useState(0);
 
   useEffect(() => {
     loadPrintJobsAndCustomers();
@@ -228,12 +231,24 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
     }));
   };
 
+  const calculateTotals = useCallback(() => {
+    const itemsTotal = formData.items.reduce((sum, item) => 
+      sum + (item.quantity * item.unitPrice), 0
+    );
+    const total = itemsTotal + shippingCost;
+    return {
+      subtotal: itemsTotal,
+      total: total
+    };
+  }, [formData.items, shippingCost]);
+
   const handleSubmit = async () => {
     try {
       const db = await initializeDatabase();
       const salesOps = new SalesOperations(db);
-      const settingsOps = new SettingsOperations(db);
+      const totals = calculateTotals();
       
+      const settingsOps = new SettingsOperations(db);
       const settings = await settingsOps.getSettings();
       const invoiceNumber = await salesOps.getNextInvoiceNumber();
       const now = new Date();
@@ -260,7 +275,8 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
           printing_cost: item.costs.printingCost,
           processing_cost: item.costs.postProcessingCost,
           extra_costs: item.costs.extraCosts,
-          currency: settings.currency
+          currency: settings.currency,
+          shipping_cost: shippingCost
         });
       }
 
@@ -391,7 +407,39 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
           </VStack>
         </ModalBody>
         <ModalFooter>
-          <TotalCalculation items={formData.items} />
+          <Box mt={4} px={6}>
+            <FormControl>
+              <FormLabel>Shipping Cost</FormLabel>
+              <NumberInput
+                value={shippingCost}
+                onChange={(value) => setShippingCost(Number(value))}
+                min={0}
+                precision={2}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </FormControl>
+          </Box>
+
+          <Box mt={4} px={6}>
+            <Flex justify="space-between" mb={2}>
+              <Text>Subtotal:</Text>
+              <Text>{currency} {calculateTotals().subtotal.toFixed(2)}</Text>
+            </Flex>
+            <Flex justify="space-between" mb={2}>
+              <Text>Shipping:</Text>
+              <Text>{currency} {shippingCost.toFixed(2)}</Text>
+            </Flex>
+            <Flex justify="space-between" fontWeight="bold">
+              <Text>Total:</Text>
+              <Text>{currency} {calculateTotals().total.toFixed(2)}</Text>
+            </Flex>
+          </Box>
+
           <Button colorScheme="blue" onClick={handleSubmit}>
             Create Sale
           </Button>
@@ -543,7 +591,8 @@ const Sales: React.FC = () => {
           quantity: sale.quantity,
           total_price: sale.total_price
         });
-        existing.total_price += sale.total_price;
+        // Opdater kun items total, IKKE shipping cost
+        existing.items_total += sale.total_price;
       } else {
         // Opret ny gruppe
         groups.set(sale.invoice_number, {
@@ -555,11 +604,18 @@ const Sales: React.FC = () => {
             quantity: sale.quantity,
             total_price: sale.total_price
           }],
-          total_price: sale.total_price,
+          items_total: sale.total_price, // Ny property til items total
+          shipping_cost: sale.shipping_cost || 0,
+          total_price: 0, // Vi beregner denne senere
           payment_status: sale.payment_status
         });
       }
     });
+
+    // Beregn total_price for hver gruppe (items_total + shipping_cost)
+    for (const group of groups.values()) {
+      group.total_price = group.items_total + group.shipping_cost;
+    }
 
     return Array.from(groups.values());
   }, [sales]);
@@ -664,6 +720,7 @@ const Sales: React.FC = () => {
               <Th>Date</Th>
               <Th>Customer</Th>
               <Th>Projects</Th>
+              <Th isNumeric>Shipping</Th>
               <Th isNumeric>Total</Th>
               <Th>Status</Th>
             </Tr>
@@ -679,6 +736,7 @@ const Sales: React.FC = () => {
                     `${item.project_name} (${item.quantity}x)`
                   ).join(', ')}
                 </Td>
+                <Td isNumeric>{currency} {sale.shipping_cost.toFixed(2)}</Td>
                 <Td isNumeric>{currency} {sale.total_price.toFixed(2)}</Td>
                 <Td>
                   <Flex gap={2}>

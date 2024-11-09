@@ -91,6 +91,7 @@ export interface Sale {
   processing_cost: number;
   extra_costs: number;
   currency: string;
+  shipping_cost: number;
   created_at?: string;
 }
 
@@ -539,8 +540,8 @@ export class SalesOperations {
           payment_status, payment_due_date, notes,
           project_name, customer_name,
           material_cost, printing_cost, processing_cost, extra_costs,
-          currency
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          currency, shipping_cost
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         sale.project_id,
         sale.customer_id,
@@ -559,7 +560,8 @@ export class SalesOperations {
         sale.printing_cost,
         sale.processing_cost,
         sale.extra_costs,
-        sale.currency
+        sale.currency,
+        sale.shipping_cost || 0 // Default til 0 hvis ikke specificeret
       ]);
 
       // Opdater print job status til 'completed'
