@@ -20,6 +20,8 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import About from './pages/About';
 
+import { version } from '../package.json';
+
 const AppContent: React.FC = () => {
   const toast = useToast();
   const { addNotification, removeNotification } = useNotifications();
@@ -86,19 +88,35 @@ const AppContent: React.FC = () => {
   }, [checkLowStock]);
 
   useEffect(() => {
-    checkLicense();
-  }, []);
+    const checkVersionAndLicense = async () => {
+      const db = await initializeDatabase();
+      const licenseOps = new LicenseOperations(db);
+      
+      // Tjek version og opdater licens hvis nødvendigt
+      const wasUpdated = await licenseOps.checkAndUpdateVersion(version);
+      
+      if (wasUpdated) {
+        toast({
+          title: 'License Extended',
+          description: 'Your license has been extended by 30 days due to this update.',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+      
+      // Normal licens check
+      const status = await licenseOps.checkLicense();
+      if (!status.isValid) {
+        setIsLicenseValid(false);
+        setShowLicenseModal(true);
+      } else {
+        setIsLicenseValid(true);
+      }
+    };
 
-  const checkLicense = async () => {
-    const db = await initializeDatabase();
-    const licenseOps = new LicenseOperations(db);
-    const status = await licenseOps.checkLicense();
-    
-    if (!status.isValid) {
-      setIsLicenseValid(false);
-      setShowLicenseModal(true);
-    }
-  };
+    checkVersionAndLicense();
+  }, []);
 
   const handleLicenseSubmit = async () => {
     try {

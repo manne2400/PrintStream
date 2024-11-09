@@ -275,14 +275,22 @@ const initializeDatabase = async (): Promise<Database> => {
   // Indsæt installations dato hvis tabellen er tom
   const licenseCount = await get('SELECT COUNT(*) as count FROM license');
   if (licenseCount.count === 0) {
-    await exec(`
-      INSERT INTO license (installation_date, expiry_date, license_key) 
-      VALUES (
-        datetime('now'),
-        datetime('now', '+30 days'),
-        NULL
-      );
-    `);
+    const now = new Date();
+    const expiryDate = new Date();
+    expiryDate.setDate(now.getDate() + 30);
+
+    await run(  // Brug run i stedet for exec for at håndtere parametre
+      `INSERT INTO license (
+        installation_date, 
+        expiry_date, 
+        license_key
+      ) VALUES (?, ?, ?)`,
+      [
+        now.toISOString(),
+        expiryDate.toISOString(),
+        null
+      ]
+    );
   }
 
   // Tilføj installation_id kolonne hvis den ikke findes
@@ -307,6 +315,47 @@ const initializeDatabase = async (): Promise<Database> => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Tilføj denne SQL til setupDatabase funktionen
+  await exec(`
+    CREATE TABLE IF NOT EXISTS app_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      version TEXT NOT NULL,
+      install_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+      installation_id TEXT NOT NULL
+    );
+  `);
+
+  // Tjek om der er nogen version gemt
+  const versionCount = await get('SELECT COUNT(*) as count FROM app_versions');
+  if (versionCount.count === 0) {
+    // Hvis ingen version er gemt, skal vi:
+    // 1. Sikre at vi har et installations-id
+    const license = await get('SELECT installation_id FROM license WHERE id = 1');
+    let installationId = license?.installation_id;
+    
+    if (!installationId) {
+      // Generer nyt installations-id hvis det ikke findes
+      installationId = 'inst_' + Math.random().toString(36).substr(2, 9);
+      await run(
+        'UPDATE license SET installation_id = ? WHERE id = 1',
+        [installationId]
+      );
+    }
+
+    // 2. Indsæt initial version med installations-id
+    const now = new Date();
+    await run(
+      'INSERT INTO app_versions (version, installation_id, install_date) VALUES (?, ?, ?)',
+      ['0.2.6', installationId, now.toISOString()]
+    );
+
+    console.log('Created initial version record:', {
+      version: '0.2.6',
+      installationId,
+      installDate: now
+    });
+  }
 
   return { run, get, all, exec }
 }

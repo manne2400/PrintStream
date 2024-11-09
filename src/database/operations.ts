@@ -591,4 +591,73 @@ export class LicenseOperations {
   }>> {
     return this.db.all('SELECT * FROM used_licenses ORDER BY first_used_date DESC');
   }
+
+  private compareVersions(v1: string, v2: string): number {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    
+    for (let i = 0; i < 3; i++) {
+      if (parts1[i] > parts2[i]) return 1;
+      if (parts1[i] < parts2[i]) return -1;
+    }
+    return 0;
+  }
+
+  async checkAndUpdateVersion(currentVersion: string): Promise<boolean> {
+    try {
+      console.log('Checking version:', currentVersion);
+
+      // Hent seneste version og licens info
+      const lastVersion = await this.db.get(
+        'SELECT version, installation_id FROM app_versions ORDER BY install_date DESC LIMIT 1'
+      );
+      const license = await this.db.get('SELECT license_key, expiry_date FROM license WHERE id = 1');
+      console.log('License info:', license);
+
+      const currentInstallId = await this.getInstallationId();
+
+      // Hvis dette er en ny version
+      if (this.compareVersions(currentVersion, lastVersion.version) > 0 &&
+          lastVersion.installation_id === currentInstallId) {
+        
+        // Gem altid den nye version
+        await this.db.run(
+          'INSERT INTO app_versions (version, installation_id) VALUES (?, ?)',
+          [currentVersion, currentInstallId]
+        );
+
+        // Hvis det er en prøvelicens (ingen licensnøgle)
+        if (!license.license_key) {
+          // Reset ALTID prøvelicens til 30 dage ved opgradering
+          console.log('Trial license - resetting to 30 days');
+          const newExpiryDate = new Date();
+          newExpiryDate.setDate(newExpiryDate.getDate() + 30);
+          await this.db.run(
+            'UPDATE license SET expiry_date = ? WHERE id = 1',
+            [newExpiryDate.toISOString()]
+          );
+          return true;
+        } else {
+          // Det er en rigtig licensnøgle
+          const licenseStatus = await this.checkLicense();
+          const daysLeft = licenseStatus.daysLeft;
+          if (daysLeft < 30) {
+            // Reset til 30 dage hvis der er mindre end 30 dage tilbage
+            const newExpiryDate = new Date();
+            newExpiryDate.setDate(newExpiryDate.getDate() + 30);
+            await this.db.run(
+              'UPDATE license SET expiry_date = ? WHERE id = 1',
+              [newExpiryDate.toISOString()]
+            );
+            return true;
+          }
+        }
+      }
+
+      return false;
+    } catch (err) {
+      console.error('Error checking version:', err);
+      return false;
+    }
+  }
 } 
