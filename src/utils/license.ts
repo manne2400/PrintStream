@@ -41,8 +41,8 @@ export const validateLicenseKey = (key: string): {
       return { isValid: false };
     }
 
-    // Tillad variabel længde for daysEncoded (op til 5 tegn)
-    if (!daysEncoded.match(/^[0-9a-f]{1,5}$/)) {
+    // Opdater regex til at acceptere op til 8 tegn for daysEncoded
+    if (!daysEncoded.match(/^[0-9a-f]{1,8}$/)) {
       console.log('Invalid days format');
       return { isValid: false };
     }
@@ -91,7 +91,7 @@ const hashString = (str: string): string => {
 
 const encodeDays = (days: number): string => {
   // Simpel kryptering af dage
-  return (days * 7919).toString(16).padStart(4, '0');
+  return (days * 7919).toString(16).padStart(8, '0');
 };
 
 const decodeDays = (encoded: string): number => {

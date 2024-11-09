@@ -1,50 +1,26 @@
 [
   {
-    "customerId": "Test",
-    "days": 30,
-    "licenseKey": "0027-3a002-08c3-91a1",
-    "generatedAt": "2024-11-07T13:53:10.817Z"
+    "customerId": "htsgfdsgfdsa",
+    "days": 365,
+    "licenseKey": "2bed-2c1ac3-6b1f-8762",
+    "generatedAt": "2024-11-09T13:21:27.561Z"
   },
   {
-    "customerId": "Jacob Manscher",
+    "customerId": "htsgfdsgfdsa",
     "days": 90,
-    "licenseKey": "4b78-ae006-45c2-963b",
-    "generatedAt": "2024-11-08T10:48:08.567Z"
+    "licenseKey": "2bed-ae006-60b4-2cc5",
+    "generatedAt": "2024-11-09T13:31:40.935Z"
   },
   {
-    "customerId": "Jacob Manscher",
-    "days": 365,
-    "licenseKey": "4b78-2c1ac3-42bd-ea62",
-    "generatedAt": "2024-11-08T11:19:39.174Z"
-  },
-  {
-    "customerId": "Jacob Manscher",
-    "days": 365,
-    "licenseKey": "4b78-2c1ac3-42bd-ea62",
-    "generatedAt": "2024-11-08T14:52:43.747Z"
-  },
-  {
-    "customerId": "Jacob Manscher",
+    "customerId": "htsgfdsgfdsa",
     "days": 180,
-    "licenseKey": "4b78-15c00c-3673-5b0b",
-    "generatedAt": "2024-11-08T15:22:54.501Z"
+    "licenseKey": "2bed-15c00c-0e11-be0b",
+    "generatedAt": "2024-11-09T13:31:59.128Z"
   },
   {
-    "customerId": "Jacob Manscher",
-    "days": 30,
-    "licenseKey": "4b78-3a002-3d80-b597",
-    "generatedAt": "2024-11-08T15:33:02.176Z"
-  },
-  {
-    "customerId": "Jacob Manscher ny",
-    "days": 30,
-    "licenseKey": "5ece-3a002-3d16-ed6c",
-    "generatedAt": "2024-11-08T15:36:23.005Z"
-  },
-  {
-    "customerId": "Test",
-    "days": 30,
-    "licenseKey": "0027-3a002-08c3-91a1",
-    "generatedAt": "2024-11-08T20:08:48.571Z"
+    "customerId": "gdrfgfdsgs",
+    "days": 365,
+    "licenseKey": "3fd9-2c1ac3-55da-dafb",
+    "generatedAt": "2024-11-09T13:43:23.559Z"
   }
 ]
