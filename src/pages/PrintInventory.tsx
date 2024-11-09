@@ -222,8 +222,14 @@ const PrintInventory: React.FC = () => {
       const db = await initializeDatabase();
       const ops = new PrintJobOperations(db);
       
+      // Opdater status
       await ops.updatePrintJob(id, { status: newStatus });
-      await loadPrintJobs(); // Genindlæs print jobs
+      
+      // Konsolider print jobs med samme status
+      await ops.consolidatePrintJobs();
+      
+      // Genindlæs print jobs
+      await loadPrintJobs();
       
       toast({
         title: 'Status Updated',
@@ -233,7 +239,7 @@ const PrintInventory: React.FC = () => {
         isClosable: true,
       });
       
-      setStatusModalData(null); // Luk modalen
+      setStatusModalData(null);
     } catch (err) {
       console.error('Failed to update status:', err);
       toast({
