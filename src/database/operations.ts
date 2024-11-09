@@ -349,40 +349,14 @@ export class PrintJobOperations {
   }
 
   async getAllPrintJobs(): Promise<PrintJob[]> {
-    // Først hent alle print jobs
-    const jobs = await this.db.all(`
+    // Simpel SELECT uden nogen form for gruppering eller manipulation
+    return this.db.all(`
       SELECT pj.*, p.name as project_name, c.name as customer_name
       FROM print_jobs pj
       LEFT JOIN projects p ON pj.project_id = p.id
       LEFT JOIN customers c ON pj.customer_id = c.id
       ORDER BY pj.date DESC
     `);
-
-    // Gruppér jobs baseret på project_id og dato
-    const groupedJobs = new Map<string, PrintJob>();
-    
-    jobs.forEach(job => {
-      const key = `${job.project_id}_${job.date}_${job.customer_id ?? 'null'}_${job.status}`;
-      
-      if (groupedJobs.has(key)) {
-        const existing = groupedJobs.get(key)!;
-        // Opdater eksisterende job
-        existing.quantity += job.quantity;
-        if (existing.price_per_unit === job.price_per_unit) {
-          existing.price_per_unit = job.price_per_unit;
-        }
-      } else {
-        // Opret nyt job i gruppen
-        groupedJobs.set(key, {
-          ...job,
-          quantity: job.quantity,
-          price_per_unit: job.price_per_unit
-        });
-      }
-    });
-
-    // Konverter map til array og returner
-    return Array.from(groupedJobs.values());
   }
 
   async addPrintJob(printJob: Omit<PrintJob, 'id' | 'created_at'>): Promise<number> {
@@ -397,6 +371,10 @@ export class PrintJobOperations {
         printJob.status
       ]
     );
+    
+    // Konsolider efter tilføjelse
+    await this.consolidatePrintJobs();
+    
     return result.lastID;
   }
 
@@ -476,6 +454,63 @@ export class PrintJobOperations {
     }
 
     return maxQuantity;
+  }
+
+  async getAllPrintJobsForSelect(): Promise<Array<{ id: number; project_name: string }>> {
+    // Hent kun aktive print jobs og gruppér efter projekt
+    const jobs = await this.db.all(`
+      SELECT DISTINCT p.id, p.name as project_name
+      FROM projects p
+      INNER JOIN print_jobs pj ON p.id = pj.project_id
+      WHERE pj.status != 'completed'
+      GROUP BY p.id, p.name
+      ORDER BY p.name ASC
+    `);
+
+    return jobs;
+  }
+
+  async consolidatePrintJobs(): Promise<void> {
+    try {
+      await this.db.run('BEGIN TRANSACTION');
+
+      // Find grupper af print jobs der skal konsolideres
+      const groups = await this.db.all(`
+        SELECT 
+          project_id,
+          status,
+          COUNT(*) as count,
+          SUM(quantity) as total_quantity,
+          MIN(id) as keep_id
+        FROM print_jobs
+        GROUP BY project_id, status
+        HAVING count > 1
+      `);
+
+      // For hver gruppe
+      for (const group of groups) {
+        // Opdater det første print job med den samlede mængde
+        await this.db.run(`
+          UPDATE print_jobs 
+          SET quantity = ?,
+              date = (SELECT MIN(date) FROM print_jobs WHERE project_id = ? AND status = ?)
+          WHERE id = ?
+        `, [group.total_quantity, group.project_id, group.status, group.keep_id]);
+
+        // Slet de andre print jobs i gruppen
+        await this.db.run(`
+          DELETE FROM print_jobs 
+          WHERE project_id = ? 
+          AND status = ? 
+          AND id != ?
+        `, [group.project_id, group.status, group.keep_id]);
+      }
+
+      await this.db.run('COMMIT');
+    } catch (err) {
+      await this.db.run('ROLLBACK');
+      throw err;
+    }
   }
 }
 
