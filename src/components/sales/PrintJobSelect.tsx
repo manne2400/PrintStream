@@ -8,6 +8,9 @@ interface PrintJobSelectProps {
 }
 
 export const PrintJobSelect: React.FC<PrintJobSelectProps> = ({ value, onChange, printJobs }) => {
+  // Filtrer kun completed print jobs
+  const completedJobs = printJobs.filter(job => job.status === 'completed');
+
   return (
     <FormControl>
       <FormLabel>Print Job</FormLabel>
@@ -16,7 +19,7 @@ export const PrintJobSelect: React.FC<PrintJobSelectProps> = ({ value, onChange,
         onChange={(e) => onChange(Number(e.target.value))}
         placeholder="Select print job"
       >
-        {printJobs.map(job => (
+        {completedJobs.map(job => (
           <option key={job.id} value={job.id}>
             {job.project_name}
           </option>

@@ -457,13 +457,12 @@ export class PrintJobOperations {
   }
 
   async getAllPrintJobsForSelect(): Promise<Array<{ id: number; project_name: string }>> {
-    // Hent kun aktive print jobs og gruppér efter projekt
+    // Hent kun completed print jobs
     const jobs = await this.db.all(`
-      SELECT DISTINCT p.id, p.name as project_name
-      FROM projects p
-      INNER JOIN print_jobs pj ON p.id = pj.project_id
-      WHERE pj.status != 'completed'
-      GROUP BY p.id, p.name
+      SELECT pj.id, p.name as project_name
+      FROM print_jobs pj
+      LEFT JOIN projects p ON pj.project_id = p.id
+      WHERE pj.status = 'completed'  // Kun completed jobs
       ORDER BY p.name ASC
     `);
 
