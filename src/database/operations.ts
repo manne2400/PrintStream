@@ -349,13 +349,40 @@ export class PrintJobOperations {
   }
 
   async getAllPrintJobs(): Promise<PrintJob[]> {
-    return this.db.all(`
+    // Først hent alle print jobs
+    const jobs = await this.db.all(`
       SELECT pj.*, p.name as project_name, c.name as customer_name
       FROM print_jobs pj
       LEFT JOIN projects p ON pj.project_id = p.id
       LEFT JOIN customers c ON pj.customer_id = c.id
       ORDER BY pj.date DESC
     `);
+
+    // Gruppér jobs baseret på project_id og dato
+    const groupedJobs = new Map<string, PrintJob>();
+    
+    jobs.forEach(job => {
+      const key = `${job.project_id}_${job.date}_${job.customer_id ?? 'null'}_${job.status}`;
+      
+      if (groupedJobs.has(key)) {
+        const existing = groupedJobs.get(key)!;
+        // Opdater eksisterende job
+        existing.quantity += job.quantity;
+        if (existing.price_per_unit === job.price_per_unit) {
+          existing.price_per_unit = job.price_per_unit;
+        }
+      } else {
+        // Opret nyt job i gruppen
+        groupedJobs.set(key, {
+          ...job,
+          quantity: job.quantity,
+          price_per_unit: job.price_per_unit
+        });
+      }
+    });
+
+    // Konverter map til array og returner
+    return Array.from(groupedJobs.values());
   }
 
   async addPrintJob(printJob: Omit<PrintJob, 'id' | 'created_at'>): Promise<number> {
@@ -431,6 +458,25 @@ export class PrintJobOperations {
       WHERE pj.id = ?
     `, [id]);
   }
+
+  async getAvailableQuantity(projectId: number): Promise<number> {
+    // Hent projekt og dets filamenter
+    const projectFilaments = await this.db.all(`
+      SELECT pf.*, f.stock
+      FROM project_filaments pf
+      JOIN filaments f ON pf.filament_id = f.id
+      WHERE pf.project_id = ?
+    `, [projectId]);
+
+    // Beregn max antal mulige prints baseret på filament beholdning
+    let maxQuantity = Infinity;
+    for (const pf of projectFilaments) {
+      const possiblePrints = Math.floor(pf.stock / pf.amount);
+      maxQuantity = Math.min(maxQuantity, possiblePrints);
+    }
+
+    return maxQuantity;
+  }
 }
 
 export class SalesOperations {
@@ -447,36 +493,73 @@ export class SalesOperations {
   }
 
   async addSale(sale: Omit<Sale, 'id' | 'created_at'>): Promise<number> {
-    const result = await this.db.run(`
-      INSERT INTO sales (
-        project_id, customer_id, print_job_id, invoice_number,
-        sale_date, quantity, unit_price, total_price,
-        payment_status, payment_due_date, notes,
-        project_name, customer_name,
-        material_cost, printing_cost, processing_cost, extra_costs,
-        currency
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      sale.project_id,
-      sale.customer_id,
-      sale.print_job_id,
-      sale.invoice_number,
-      sale.sale_date,
-      sale.quantity,
-      sale.unit_price,
-      sale.total_price,
-      sale.payment_status,
-      sale.payment_due_date,
-      sale.notes,
-      sale.project_name,
-      sale.customer_name,
-      sale.material_cost,
-      sale.printing_cost,
-      sale.processing_cost,
-      sale.extra_costs,
-      sale.currency
-    ]);
-    return result.lastID;
+    try {
+      // Start en transaktion
+      await this.db.run('BEGIN TRANSACTION');
+
+      // Tilføj salget
+      const result = await this.db.run(`
+        INSERT INTO sales (
+          project_id, customer_id, print_job_id, invoice_number,
+          sale_date, quantity, unit_price, total_price,
+          payment_status, payment_due_date, notes,
+          project_name, customer_name,
+          material_cost, printing_cost, processing_cost, extra_costs,
+          currency
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        sale.project_id,
+        sale.customer_id,
+        sale.print_job_id,
+        sale.invoice_number,
+        sale.sale_date,
+        sale.quantity,
+        sale.unit_price,
+        sale.total_price,
+        sale.payment_status,
+        sale.payment_due_date,
+        sale.notes,
+        sale.project_name,
+        sale.customer_name,
+        sale.material_cost,
+        sale.printing_cost,
+        sale.processing_cost,
+        sale.extra_costs,
+        sale.currency
+      ]);
+
+      // Opdater print job status til 'completed'
+      await this.db.run(
+        'UPDATE print_jobs SET status = ?, quantity = quantity - ? WHERE id = ?',
+        ['completed', sale.quantity, sale.print_job_id]
+      );
+
+      // Træk fra filament lager
+      const projectFilaments = await this.db.all(`
+        SELECT pf.filament_id, pf.amount, f.stock
+        FROM project_filaments pf
+        JOIN filaments f ON pf.filament_id = f.id
+        WHERE pf.project_id = ?
+      `, [sale.project_id]);
+
+      // Opdater filament beholdning
+      for (const pf of projectFilaments) {
+        const newStock = pf.stock - (pf.amount * sale.quantity);
+        await this.db.run(
+          'UPDATE filaments SET stock = ? WHERE id = ?',
+          [newStock, pf.filament_id]
+        );
+      }
+
+      // Commit transaktionen
+      await this.db.run('COMMIT');
+
+      return result.lastID;
+    } catch (err) {
+      // Hvis noget går galt, ruller vi tilbage
+      await this.db.run('ROLLBACK');
+      throw err;
+    }
   }
 
   async getNextInvoiceNumber(): Promise<string> {

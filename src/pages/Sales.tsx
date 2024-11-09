@@ -147,17 +147,46 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
     }
   };
 
-  const handleQuantityChange = (value: string, index: number) => {
-    const numValue = Number(value);
-    if (isNaN(numValue)) return;
-    
-    const updatedItems = [...formData.items];
-    updatedItems[index] = {
-      ...updatedItems[index],
-      quantity: numValue,
-      totalPrice: numValue * updatedItems[index].unitPrice
-    };
-    setFormData(prev => ({ ...prev, items: updatedItems }));
+  const handleQuantityChange = async (value: string, index: number) => {
+    try {
+      const numValue = Number(value);
+      if (isNaN(numValue)) return;
+
+      const db = await initializeDatabase();
+      const printJobOps = new PrintJobOperations(db);
+      
+      // Hent print job og tilgængelig quantity
+      const printJob = await printJobOps.getPrintJobById(formData.items[index].printJobId);
+      const availableQuantity = await printJobOps.getAvailableQuantity(printJob.project_id);
+
+      if (numValue > availableQuantity) {
+        toast({
+          title: 'Warning',
+          description: `Only ${availableQuantity} units available in stock`,
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+      
+      const updatedItems = [...formData.items];
+      updatedItems[index] = {
+        ...updatedItems[index],
+        quantity: numValue,
+        totalPrice: numValue * updatedItems[index].unitPrice
+      };
+      setFormData(prev => ({ ...prev, items: updatedItems }));
+    } catch (err) {
+      console.error('Failed to update quantity:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to validate stock quantity',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   const handleUnitPriceChange = (value: string, index: number) => {
