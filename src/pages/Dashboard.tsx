@@ -84,10 +84,28 @@ const Dashboard: React.FC = () => {
 
       // Beregn total omsætning og profit
       const totalRevenue = sales.reduce((sum, sale) => sum + sale.total_price, 0);
+      
+      // Beregn profit på samme måde som i Reports
       const totalProfit = sales.reduce((sum, sale) => {
-        const costs = sale.material_cost + sale.printing_cost + sale.processing_cost + sale.extra_costs;
-        return sum + (sale.total_price - costs);
+        const costPerUnit = (
+          sale.material_cost + 
+          sale.printing_cost + 
+          sale.processing_cost + 
+          sale.extra_costs
+        );
+        const totalCost = costPerUnit * sale.quantity;
+        return sum + (sale.total_price - totalCost);
       }, 0);
+
+      const profitMargin = totalRevenue ? (totalProfit / totalRevenue) * 100 : 0;
+
+      setStats(prev => ({
+        ...prev,
+        totalRevenue,
+        totalProfit,
+        profitMargin,
+        totalOrders: sales.length
+      }));
 
       // Hent filament data
       const filaments = await filamentOps.getAllFilaments();
@@ -112,14 +130,12 @@ const Dashboard: React.FC = () => {
       ].sort((a, b) => b.date.getTime() - a.date.getTime())
        .slice(0, 10); // Vis kun de 10 seneste aktiviteter
 
-      setStats({
-        totalRevenue,
-        totalProfit,
-        totalOrders: sales.length,
+      setStats(prev => ({
+        ...prev,
         lowStockItems,
         recentSales,
         recentActivity: activities
-      });
+      }));
 
       // Forbered data til sales chart
       const last5Days = Array.from({length: 5}, (_, i) => {
@@ -192,7 +208,7 @@ const Dashboard: React.FC = () => {
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     }
-  }, [currency]); // Tilføj currency som dependency
+  }, []);
 
   // Brug useEffect med cleanup
   useEffect(() => {

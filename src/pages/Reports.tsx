@@ -93,11 +93,16 @@ const Reports: React.FC = () => {
 
       // Beregn statistik
       const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.total_price, 0);
-      const totalCosts = filteredSales.reduce((sum, sale) => 
-        sum + sale.material_cost + sale.printing_cost + sale.processing_cost + sale.extra_costs, 
-        0
-      );
-      const totalProfit = totalRevenue - totalCosts;
+      const totalProfit = filteredSales.reduce((sum, sale) => {
+        const costPerUnit = (
+          sale.material_cost + 
+          sale.printing_cost + 
+          sale.processing_cost + 
+          sale.extra_costs
+        );
+        const totalCost = costPerUnit * sale.quantity;
+        return sum + (sale.total_price - totalCost);
+      }, 0);
       
       setSalesStats({
         totalRevenue,
@@ -117,14 +122,20 @@ const Reports: React.FC = () => {
           profit: 0
         };
 
-        const costs = sale.material_cost + sale.printing_cost + sale.processing_cost + sale.extra_costs;
-        const profit = sale.total_price - costs;
+        const costPerUnit = (
+          sale.material_cost + 
+          sale.printing_cost + 
+          sale.processing_cost + 
+          sale.extra_costs
+        );
+        const totalCost = costPerUnit * sale.quantity;
+        const saleProfit = sale.total_price - totalCost;
 
         productMap.set(sale.project_name, {
           ...existing,
           total_quantity: existing.total_quantity + sale.quantity,
           total_revenue: existing.total_revenue + sale.total_price,
-          profit: existing.profit + profit
+          profit: existing.profit + saleProfit
         });
       });
 
