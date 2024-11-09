@@ -28,23 +28,6 @@ interface CostBreakdown {
   totalCost: number;
 }
 
-// Tilføj interface for grupperede print jobs
-interface GroupedPrintJob {
-  project_id: number;
-  project_name: string;
-  customer_name?: string;
-  date: string;
-  total_quantity: number;
-  status: PrintStatus;
-  prints: PrintJob[];
-}
-
-// Tilføj SortConfig interface
-interface SortConfig {
-  key: keyof PrintJob;
-  direction: 'asc' | 'desc';
-}
-
 // Tilføj PrintStatus type
 type PrintStatus = 'pending' | 'printing' | 'completed' | 'cancelled';
 
@@ -61,7 +44,7 @@ const PrintInventory: React.FC = () => {
     status: 'pending'
   });
 
-  const [printJobs, setPrintJobs] = useState<Array<PrintJob & { project_name?: string, customer_name?: string }>>([]);
+  const [printJobs, setPrintJobs] = useState<PrintJob[]>([]);
 
   // Tilføj state for edit og delete
   const [editModalData, setEditModalData] = useState<PrintJob | null>(null);
@@ -331,28 +314,6 @@ const PrintInventory: React.FC = () => {
     }
   };
 
-  // I PrintInventory komponenten, tilføj gruppering af print jobs
-  const groupedPrintJobs = useMemo(() => {
-    const groups = printJobs.reduce((acc: { [key: number]: GroupedPrintJob }, job) => {
-      if (!acc[job.project_id]) {
-        acc[job.project_id] = {
-          project_id: job.project_id,
-          project_name: job.project_name || '',
-          customer_name: job.customer_name,
-          date: job.date,
-          total_quantity: 0,
-          status: job.status,
-          prints: []
-        };
-      }
-      acc[job.project_id].total_quantity += job.quantity;
-      acc[job.project_id].prints.push(job);
-      return acc;
-    }, {});
-
-    return Object.values(groups);
-  }, [printJobs]);
-
   // Tilføj søgefunktion
   const filteredPrintJobs = useMemo(() => {
     return printJobs.filter(job => {
@@ -434,74 +395,22 @@ const PrintInventory: React.FC = () => {
         <Table variant="simple">
           <Thead>
             <Tr>
-              <Th cursor="pointer" onClick={() => handleSort('project_id')}>
-                <Flex align="center">
-                  Project {renderSortIcon('project_id')}
-                </Flex>
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('date')}>
-                <Flex align="center">
-                  Date {renderSortIcon('date')}
-                </Flex>
-              </Th>
-              <Th isNumeric cursor="pointer" onClick={() => handleSort('quantity')}>
-                <Flex align="center" justify="flex-end">
-                  Quantity {renderSortIcon('quantity')}
-                </Flex>
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('status')}>
-                <Flex align="center">
-                  Status {renderSortIcon('status')}
-                </Flex>
-              </Th>
+              <Th>Project</Th>
+              <Th>Date</Th>
+              <Th>Quantity</Th>
+              <Th>Status</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {groupedPrintJobs.map((group) => (
-              <Tr key={group.project_id}>
-                <Td>{group.project_name}</Td>
-                <Td>{group.date}</Td>
-                <Td isNumeric>
-                  <Editable
-                    defaultValue={group.total_quantity.toString()}
-                    onSubmit={async (value) => {
-                      const newQuantity = parseInt(value);
-                      if (!isNaN(newQuantity) && group.prints[0]?.id) {
-                        try {
-                          const db = await initializeDatabase();
-                          const ops = new PrintJobOperations(db);
-                          await ops.updatePrintJob(group.prints[0].id, {
-                            quantity: newQuantity
-                          });
-                          loadPrintJobs(); // Genindlæs data
-                          toast({
-                            title: 'Success',
-                            description: 'Quantity updated successfully',
-                            status: 'success',
-                            duration: 2000,
-                            isClosable: true,
-                          });
-                        } catch (err) {
-                          console.error('Failed to update quantity:', err);
-                          toast({
-                            title: 'Error',
-                            description: 'Failed to update quantity',
-                            status: 'error',
-                            duration: 5000,
-                            isClosable: true,
-                          });
-                        }
-                      }
-                    }}
-                  >
-                    <EditablePreview />
-                    <EditableInput type="number" min="0" />
-                  </Editable>
-                </Td>
-                <Td onClick={() => setStatusModalData(group.prints[0])} style={{ cursor: 'pointer' }}>
-                  <Text color={statusColors[group.status]} fontWeight="medium">
-                    {statusLabels[group.status]}
+            {printJobs.map((job) => (
+              <Tr key={job.id}>
+                <Td>{job.project_name}</Td>
+                <Td>{job.date}</Td>
+                <Td>{job.quantity}</Td>
+                <Td onClick={() => setStatusModalData(job)} style={{ cursor: 'pointer' }}>
+                  <Text color={statusColors[job.status]} fontWeight="medium">
+                    {statusLabels[job.status]}
                   </Text>
                 </Td>
                 <Td>
@@ -511,7 +420,7 @@ const PrintInventory: React.FC = () => {
                       icon={<Icon as={PencilIcon} />}
                       size="sm"
                       variant="ghost"
-                      onClick={() => setEditModalData(group.prints[0])}
+                      onClick={() => setEditModalData(job)}
                     />
                     <IconButton
                       aria-label="Delete print job"
@@ -519,7 +428,7 @@ const PrintInventory: React.FC = () => {
                       size="sm"
                       variant="ghost"
                       colorScheme="red"
-                      onClick={() => handleDelete(group)}
+                      onClick={() => setDeleteJob(job)}
                     />
                   </Flex>
                 </Td>
