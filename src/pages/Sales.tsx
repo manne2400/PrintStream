@@ -5,15 +5,19 @@ import {
   useToast, InputGroup, InputLeftElement, Input,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter,
   FormControl, FormLabel, Select, NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper,
-  VStack, Textarea, Badge, Divider, Checkbox, IconButton
+  VStack, Textarea, Badge, Divider, Checkbox, IconButton, Grid
 } from '@chakra-ui/react';
-import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon, TrashIcon, MinusIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { SalesOperations, ProjectOperations, FilamentOperations } from '../database/operations';
 import { PrintJobOperations } from '../database/operations';
 import { CustomerOperations } from '../database/operations';
 import { SettingsOperations } from '../database/operations';
 import { useCurrency } from '../context/CurrencyContext';
+import { Sale, SaleItem } from '../types/sales';
+import { CustomerSelect } from '../components/sales/CustomerSelect';
+import { PrintJobSelect } from '../components/sales/PrintJobSelect';
+import { TotalCalculation } from '../components/sales/TotalCalculation';
 
 interface SortConfig {
   key: string;
@@ -44,17 +48,6 @@ interface PaymentStatusModalProps {
   onSubmit: (id: number, status: 'pending' | 'paid' | 'cancelled') => void;
 }
 
-interface SaleFormData {
-  printJobId: string;
-  customerId: string;
-  quantity: number;
-  unitPrice: number;
-  paymentDueDate: string;
-  notes: string;
-  isGift: boolean;
-  saleDate: string;
-}
-
 interface DeleteSaleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -63,96 +56,170 @@ interface DeleteSaleModalProps {
 }
 
 const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
-  const [formData, setFormData] = useState<SaleFormData>({
-    printJobId: '',
+  const [formData, setFormData] = useState<FormData>({
     customerId: '',
-    quantity: 1,
-    unitPrice: 0,
-    paymentDueDate: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
-    notes: '',
-    isGift: false,
-    saleDate: new Date().toISOString().split('T')[0]
+    items: [],
+    paymentStatus: 'pending',
+    paymentDueDate: '',
+    notes: ''
   });
-  const [printJobs, setPrintJobs] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [selectedPrintJob, setSelectedPrintJob] = useState<any>(null);
-  const { currency } = useCurrency();
+
+  const [printJobs, setPrintJobs] = useState<Array<{ id: number; project_name: string }>>([]);
+  const [customers, setCustomers] = useState<Array<{ id: number; name: string }>>([]);
   const toast = useToast();
-  const [costBreakdown, setCostBreakdown] = useState<CostBreakdown | null>(null);
+  const { currency } = useCurrency();
 
   useEffect(() => {
-    loadPrintJobs();
-    loadCustomers();
+    loadPrintJobsAndCustomers();
   }, []);
 
-  const loadPrintJobs = async () => {
+  const loadPrintJobsAndCustomers = async () => {
+    const db = await initializeDatabase();
+    const printJobOps = new PrintJobOperations(db);
+    const customerOps = new CustomerOperations(db);
+    
+    const jobs = await printJobOps.getAllPrintJobs();
+    const custs = await customerOps.getAllCustomers();
+    
+    setPrintJobs(jobs);
+    setCustomers(custs);
+  };
+
+  const handlePrintJobChange = async (value: number, index: number) => {
     try {
       const db = await initializeDatabase();
-      const ops = new PrintJobOperations(db);
-      const data = await ops.getAllPrintJobs();
-      setPrintJobs(data);
+      const printJobOps = new PrintJobOperations(db);
+      const settingsOps = new SettingsOperations(db);
+      
+      // Hent print job og settings
+      const printJob = await printJobOps.getPrintJobById(value);
+      const settings = await settingsOps.getSettings();
+      if (!printJob) return;
+      
+      // Beregn omkostninger
+      const costs = await printJobOps.calculateProjectCosts(printJob.project_id);
+      const profitMargin = settings.profit_margin ?? 30;
+      
+      // Beregn foreslået pris baseret på profit margin
+      const totalCostPerUnit = costs.materialCost + costs.printingCost + 
+                             costs.postProcessingCost + costs.extraCosts;
+      const suggestedPrice = Number((totalCostPerUnit / (1 - profitMargin / 100)).toFixed(2));
+      
+      const updatedItems = [...formData.items];
+      updatedItems[index] = {
+        ...updatedItems[index],
+        printJobId: value,
+        projectName: printJob.project_name || '',
+        unitPrice: suggestedPrice,
+        quantity: 1,
+        totalPrice: suggestedPrice,
+        costs: {
+          materialCost: Number(costs.materialCost.toFixed(2)),
+          printingCost: Number(costs.printingCost.toFixed(2)),
+          postProcessingCost: Number(costs.postProcessingCost.toFixed(2)),
+          extraCosts: Number(costs.extraCosts.toFixed(2))
+        }
+      };
+      
+      setFormData(prev => ({ ...prev, items: updatedItems }));
     } catch (err) {
-      console.error('Failed to load print jobs:', err);
+      console.error('Failed to update print job:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load print job costs',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
-  const loadCustomers = async () => {
-    try {
-      const db = await initializeDatabase();
-      const ops = new CustomerOperations(db);
-      const data = await ops.getAllCustomers();
-      setCustomers(data);
-    } catch (err) {
-      console.error('Failed to load customers:', err);
-    }
+  const handleQuantityChange = (value: string, index: number) => {
+    const numValue = Number(value);
+    if (isNaN(numValue)) return;
+    
+    const updatedItems = [...formData.items];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      quantity: numValue,
+      totalPrice: numValue * updatedItems[index].unitPrice
+    };
+    setFormData(prev => ({ ...prev, items: updatedItems }));
+  };
+
+  const handleUnitPriceChange = (value: string, index: number) => {
+    const numValue = Number(value);
+    if (isNaN(numValue)) return;
+    
+    const updatedItems = [...formData.items];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      unitPrice: numValue,
+      totalPrice: numValue * updatedItems[index].quantity
+    };
+    setFormData(prev => ({ ...prev, items: updatedItems }));
+  };
+
+  const addNewItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, {
+        printJobId: 0,
+        projectName: '',
+        quantity: 1,
+        unitPrice: 0,
+        totalPrice: 0,
+        costs: {
+          materialCost: 0,
+          printingCost: 0,
+          postProcessingCost: 0,
+          extraCosts: 0
+        }
+      }]
+    }));
+  };
+
+  const removeItem = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async () => {
     try {
       const db = await initializeDatabase();
-      const ops = new SalesOperations(db);
-      const printJobOps = new PrintJobOperations(db);
+      const salesOps = new SalesOperations(db);
       const settingsOps = new SettingsOperations(db);
       
-      // Hent print job og beregn omkostninger
-      const printJob = printJobs.find(pj => pj.id === parseInt(formData.printJobId));
-      if (!printJob) return;
-      
-      const costs = await printJobOps.calculateProjectCosts(printJob.project_id);
       const settings = await settingsOps.getSettings();
-      
-      // Generer fakturanummer
-      const invoiceNumber = await ops.getNextInvoiceNumber();
-      
-      // Opret salg med snapshot data
-      await ops.addSale({
-        project_id: printJob.project_id,
-        customer_id: formData.customerId ? parseInt(formData.customerId) : null,
-        print_job_id: parseInt(formData.printJobId),
-        invoice_number: invoiceNumber,
-        sale_date: formData.saleDate,
-        quantity: formData.quantity,
-        unit_price: formData.isGift ? 0 : formData.unitPrice,
-        total_price: formData.isGift ? 0 : formData.unitPrice * formData.quantity,
-        payment_status: formData.isGift ? 'paid' : 'pending',
-        payment_due_date: formData.paymentDueDate,
-        notes: formData.isGift ? `Gift - ${formData.notes}` : formData.notes,
-        project_name: printJob.project_name,
-        customer_name: customers.find(c => c.id === parseInt(formData.customerId))?.name || null,
-        material_cost: costs.materialCost,
-        printing_cost: costs.printingCost,
-        processing_cost: costs.postProcessingCost,
-        extra_costs: costs.extraCosts,
-        currency: settings.currency
-      });
+      const invoiceNumber = await salesOps.getNextInvoiceNumber();
+      const now = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(now.getDate() + 30);
 
-      // Opdater print job quantity i stedet for at slette det
-      const remainingQuantity = printJob.quantity - formData.quantity;
-      if (remainingQuantity > 0) {
-        await printJobOps.updatePrintJob(printJob.id!, { quantity: remainingQuantity });
-      } else {
-        // Kun slet hvis der ikke er flere prints tilbage
-        await printJobOps.deletePrintJob(printJob.id!);
+      // Opret et salg for hvert item
+      for (const item of formData.items) {
+        await salesOps.addSale({
+          project_id: item.printJobId,
+          customer_id: formData.customerId ? parseInt(formData.customerId) : null,
+          print_job_id: item.printJobId,
+          invoice_number: invoiceNumber,
+          sale_date: now.toISOString(),
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          total_price: item.totalPrice,
+          payment_status: formData.paymentStatus,
+          payment_due_date: dueDate.toISOString(),
+          notes: formData.notes,
+          project_name: item.projectName,
+          customer_name: customers.find(c => c.id.toString() === formData.customerId)?.name || null,
+          material_cost: item.costs.materialCost,
+          printing_cost: item.costs.printingCost,
+          processing_cost: item.costs.postProcessingCost,
+          extra_costs: item.costs.extraCosts,
+          currency: settings.currency
+        });
       }
 
       toast({
@@ -163,8 +230,8 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
         isClosable: true,
       });
 
+      onSaleComplete();
       onClose();
-      if (onSaleComplete) onSaleComplete();
     } catch (err) {
       console.error('Failed to create sale:', err);
       toast({
@@ -177,260 +244,113 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
     }
   };
 
-  const handlePrintJobChange = async (printJobId: string) => {
-    try {
-      const printJob = printJobs.find(pj => pj.id === parseInt(printJobId));
-      if (!printJob) return;
-
-      const db = await initializeDatabase();
-      const printJobOps = new PrintJobOperations(db);
-      const settingsOps = new SettingsOperations(db);
-      
-      // Hent omkostninger og settings
-      const costs = await printJobOps.calculateProjectCosts(printJob.project_id);
-      const settings = await settingsOps.getSettings();
-      const profitMargin = settings.profit_margin ?? 30;
-      
-      // VIGTIG ÆNDRING: Brug de faktiske omkostninger per enhed
-      const costBreakdown = {
-        materialCost: costs.materialCost,           // Allerede per enhed
-        printingCost: costs.printingCost,          // Allerede per enhed
-        postProcessingCost: costs.postProcessingCost, // Allerede per enhed
-        extraCosts: costs.extraCosts,              // Allerede per enhed
-        totalCost: costs.totalCost,                // Allerede per enhed
-        suggestedPrice: costs.totalCost * (1 + profitMargin / 100),
-        profitMargin,
-        expectedProfit: costs.totalCost * (profitMargin / 100)
-      };
-      
-      setCostBreakdown(costBreakdown);
-      
-      setFormData(prev => ({
-        ...prev,
-        printJobId,
-        unitPrice: costBreakdown.suggestedPrice,
-        quantity: 1
-      }));
-    } catch (err) {
-      console.error('Failed to calculate costs:', err);
-    }
-  };
-
-  // Tilføj ny funktion til at håndtere quantity ændringer
-  const handleQuantityChange = (newQuantity: number) => {
-    if (!costBreakdown) return;
-
-    // Opdater formData med ny quantity
-    setFormData(prev => ({
-      ...prev,
-      quantity: newQuantity,
-      // Behold samme unit price
-      unitPrice: costBreakdown.suggestedPrice
-    }));
-
-    // Opdater cost breakdown med nye totaler
-    setCostBreakdown(prev => {
-      if (!prev) return prev;
-
-      // Beregn totaler baseret på original pris per enhed
-      const perUnit = {
-        materialCost: prev.materialCost / formData.quantity,
-        printingCost: prev.printingCost / formData.quantity,
-        postProcessingCost: prev.postProcessingCost / formData.quantity,
-        extraCosts: prev.extraCosts / formData.quantity,
-        totalCost: prev.totalCost / formData.quantity,
-      };
-
-      // Gang med det nye antal
-      return {
-        materialCost: perUnit.materialCost * newQuantity,
-        printingCost: perUnit.printingCost * newQuantity,
-        postProcessingCost: perUnit.postProcessingCost * newQuantity,
-        extraCosts: perUnit.extraCosts * newQuantity,
-        totalCost: perUnit.totalCost * newQuantity,
-        suggestedPrice: prev.suggestedPrice, // Denne forbliver den samme per enhed
-        profitMargin: prev.profitMargin, // Denne forbliver den samme
-        expectedProfit: (prev.suggestedPrice * newQuantity) - (perUnit.totalCost * newQuantity)
-      };
-    });
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Create New Sale</ModalHeader>
+        <ModalHeader>New Sale</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4}>
-            <FormControl isRequired>
-              <FormLabel>Print Job</FormLabel>
-              <Select
-                value={formData.printJobId}
-                onChange={(e) => handlePrintJobChange(e.target.value)}
-                placeholder="Select print job"
-              >
-                {printJobs.map(job => (
-                  <option key={job.id} value={job.id}>
-                    {job.project_name} ({job.quantity} units)
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+            {/* Customer Selection */}
+            <CustomerSelect 
+              value={formData.customerId}
+              onChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
+              customers={customers}
+            />
+            
+            {/* Print Items List */}
+            {formData.items.map((item, index) => (
+              <Box key={index} p={4} borderWidth={1} borderRadius="md" w="100%" bg="whiteAlpha.50">
+                <VStack spacing={4} align="stretch">
+                  <Grid templateColumns="repeat(4, 1fr)" gap={4}>
+                    <PrintJobSelect
+                      value={item.printJobId}
+                      onChange={(value) => handlePrintJobChange(value, index)}
+                      printJobs={printJobs}
+                    />
+                    <FormControl>
+                      <FormLabel>Quantity</FormLabel>
+                      <NumberInput
+                        value={item.quantity}
+                        min={1}
+                        onChange={(valueString) => handleQuantityChange(valueString, index)}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+                    <FormControl>
+                      <FormLabel>Unit Price</FormLabel>
+                      <NumberInput
+                        value={item.unitPrice}
+                        min={0}
+                        precision={2}
+                        onChange={(valueString) => handleUnitPriceChange(valueString, index)}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+                    <IconButton
+                      aria-label="Remove item"
+                      icon={<MinusIcon />}
+                      onClick={() => removeItem(index)}
+                      alignSelf="flex-end"
+                    />
+                  </Grid>
 
-            <FormControl>
-              <FormLabel>Customer</FormLabel>
-              <Select
-                value={formData.customerId}
-                onChange={(e) => setFormData(prev => ({ ...prev, customerId: e.target.value }))}
-                placeholder="Select customer (optional)"
-              >
-                {customers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl isRequired>
-              <FormLabel>Quantity</FormLabel>
-              <NumberInput
-                value={formData.quantity}
-                onChange={(value) => handleQuantityChange(parseInt(value))}
-                min={1}
-                max={selectedPrintJob?.quantity || 999999}
-              >
-                <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
-            </FormControl>
-
-            <FormControl isRequired>
-              <FormLabel>Unit Price ({currency})</FormLabel>
-              <NumberInput
-                value={formData.unitPrice}
-                onChange={(value) => setFormData(prev => ({ ...prev, unitPrice: parseFloat(value) }))}
-                min={0}
-                precision={2}
-                isDisabled={formData.isGift}
-              >
-                <NumberInputField />
-                <NumberInputStepper>
-                  <NumberIncrementStepper />
-                  <NumberDecrementStepper />
-                </NumberInputStepper>
-              </NumberInput>
-            </FormControl>
-
-            <FormControl isRequired>
-              <FormLabel>Sale Date</FormLabel>
-              <Input
-                type="date"
-                value={formData.saleDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, saleDate: e.target.value }))}
-              />
-            </FormControl>
-
-            <FormControl isRequired>
-              <FormLabel>Payment Due Date</FormLabel>
-              <Input
-                type="date"
-                value={formData.paymentDueDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, paymentDueDate: e.target.value }))}
-              />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Notes</FormLabel>
-              <Textarea
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Add any additional notes..."
-              />
-            </FormControl>
-
-            <FormControl>
-              <Flex align="center">
-                <Checkbox
-                  isChecked={formData.isGift}
-                  onChange={(e) => {
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      isGift: e.target.checked,
-                      unitPrice: e.target.checked ? 0 : costBreakdown?.suggestedPrice || 0
-                    }));
-                  }}
-                >
-                  Mark as Gift
-                </Checkbox>
-                <Text ml={2} fontSize="sm" color="gray.500">
-                  No payment will be required
-                </Text>
-              </Flex>
-            </FormControl>
-
-            {costBreakdown && (
-              <Box width="100%" p={4} borderWidth={1} borderRadius="md">
-                <Heading size="sm" mb={2}>Cost Breakdown (Total for {formData.quantity} units)</Heading>
-                <VStack align="stretch" spacing={2}>
-                  <Flex justify="space-between">
-                    <Text>Material Cost:</Text>
-                    <Text>{currency} {costBreakdown.materialCost.toFixed(2)}</Text>
-                  </Flex>
-                  <Flex justify="space-between">
-                    <Text>Printing Cost:</Text>
-                    <Text>{currency} {costBreakdown.printingCost.toFixed(2)}</Text>
-                  </Flex>
-                  <Flex justify="space-between">
-                    <Text>Post-Processing Cost:</Text>
-                    <Text>{currency} {costBreakdown.postProcessingCost.toFixed(2)}</Text>
-                  </Flex>
-                  <Flex justify="space-between">
-                    <Text>Extra Costs:</Text>
-                    <Text>{currency} {costBreakdown.extraCosts.toFixed(2)}</Text>
-                  </Flex>
-                  <Divider />
-                  <Flex justify="space-between" fontWeight="bold">
-                    <Text>Total Cost:</Text>
-                    <Text>{currency} {costBreakdown.totalCost.toFixed(2)}</Text>
-                  </Flex>
-                  <Divider />
-                  <Flex justify="space-between" color="green.500">
-                    <Text>Profit Margin:</Text>
-                    <Text>{costBreakdown.profitMargin}%</Text>
-                  </Flex>
-                  <Flex justify="space-between" fontWeight="bold" color="green.500">
-                    <Text>Expected Profit:</Text>
-                    <Text>{currency} {costBreakdown.expectedProfit.toFixed(2)}</Text>
-                  </Flex>
-                  <Divider />
-                  <Flex justify="space-between" fontWeight="bold" fontSize="lg" color="blue.500">
-                    <Text>Suggested Price (per unit):</Text>
-                    <Text>{currency} {costBreakdown.suggestedPrice.toFixed(2)}</Text>
-                  </Flex>
-                  <Flex justify="space-between" fontWeight="bold" fontSize="lg" color="blue.500">
-                    <Text>Total Price ({formData.quantity} units):</Text>
-                    <Text>{currency} {(costBreakdown.suggestedPrice * formData.quantity).toFixed(2)}</Text>
-                  </Flex>
+                  {/* Cost Breakdown */}
+                  <Box p={4} bg="whiteAlpha.100" borderRadius="md">
+                    <Text fontWeight="bold" mb={2}>Cost Breakdown</Text>
+                    <Grid templateColumns="1fr auto" gap={2}>
+                      <Text color="gray.400">Material Cost:</Text>
+                      <Text>{currency} {item.costs.materialCost.toFixed(2)}</Text>
+                      <Text color="gray.400">Printing Cost:</Text>
+                      <Text>{currency} {item.costs.printingCost.toFixed(2)}</Text>
+                      <Text color="gray.400">Post-Processing Cost:</Text>
+                      <Text>{currency} {item.costs.postProcessingCost.toFixed(2)}</Text>
+                      <Text color="gray.400">Extra Costs:</Text>
+                      <Text>{currency} {item.costs.extraCosts.toFixed(2)}</Text>
+                      <Divider my={2} />
+                      <Text fontWeight="bold" color="gray.400">Total Cost per Unit:</Text>
+                      <Text fontWeight="bold">
+                        {currency} {(
+                          item.costs.materialCost +
+                          item.costs.printingCost +
+                          item.costs.postProcessingCost +
+                          item.costs.extraCosts
+                        ).toFixed(2)}
+                      </Text>
+                    </Grid>
+                  </Box>
                 </VStack>
               </Box>
-            )}
+            ))}
+            
+            {/* Add Item Button */}
+            <Button 
+              leftIcon={<PlusIcon />}
+              onClick={addNewItem}
+              w="100%"
+              variant="outline"
+              _hover={{ bg: "whiteAlpha.200" }}
+            >
+              Add Print Item
+            </Button>
+
+            {/* Rest of the form */}
           </VStack>
         </ModalBody>
-
         <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>
-            Cancel
-          </Button>
-          <Button 
-            colorScheme="blue" 
-            onClick={handleSubmit}
-            isDisabled={!formData.printJobId || (!formData.isGift && formData.unitPrice <= 0)}
-          >
+          <TotalCalculation items={formData.items} />
+          <Button colorScheme="blue" onClick={handleSubmit}>
             Create Sale
           </Button>
         </ModalFooter>

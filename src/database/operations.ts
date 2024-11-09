@@ -422,6 +422,15 @@ export class PrintJobOperations {
   async deleteProjectPrints(projectId: number): Promise<void> {
     await this.db.run('DELETE FROM print_jobs WHERE project_id = ?', [projectId]);
   }
+
+  async getPrintJobById(id: number): Promise<PrintJob | null> {
+    return this.db.get(`
+      SELECT pj.*, p.name as project_name 
+      FROM print_jobs pj
+      LEFT JOIN projects p ON pj.project_id = p.id
+      WHERE pj.id = ?
+    `, [id]);
+  }
 }
 
 export class SalesOperations {
