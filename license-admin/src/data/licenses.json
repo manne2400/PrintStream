@@ -34,5 +34,11 @@
     "days": 30,
     "licenseKey": "0698-3a002-1ecf-de41",
     "generatedAt": "2024-11-09T20:32:22.181Z"
+  },
+  {
+    "customerId": "Jacob Test",
+    "days": 30,
+    "licenseKey": "6fc9-3a002-7491-4220",
+    "generatedAt": "2024-11-07T18:04:07.330Z"
   }
 ]

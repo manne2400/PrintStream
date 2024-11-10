@@ -1,5 +1,6 @@
 import { Database } from './setup'
 import { validateLicenseKey } from '../utils/license';
+import { fetchNetworkTime } from '../utils/networkTime';
 
 export interface Filament {
   id?: number
@@ -689,21 +690,40 @@ export class LicenseOperations {
     this.db = db;
   }
 
-  async checkLicense(): Promise<{
-    isValid: boolean;
-    daysLeft: number;
-    expiryDate: string;
-  }> {
-    const license = await this.db.get('SELECT * FROM license LIMIT 1');
-    const now = new Date();
-    const expiry = new Date(license.expiry_date);
-    const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return {
-      isValid: daysLeft > 0,
-      daysLeft: Math.max(0, daysLeft),
-      expiryDate: license.expiry_date
-    };
+  async checkLicense(): Promise<{ isValid: boolean; daysLeft: number }> {
+    try {
+      const license = await this.db.get('SELECT license_key, expiry_date FROM license WHERE id = 1');
+      
+      // Hent præcis tid fra NTP server
+      const networkTime = await fetchNetworkTime();
+      
+      if (!license.license_key) {
+        // Trial license check med network time
+        const expiryDate = new Date(license.expiry_date);
+        const daysLeft = Math.ceil((expiryDate.getTime() - networkTime.getTime()) / (1000 * 60 * 60 * 24));
+        return {
+          isValid: daysLeft > 0,
+          daysLeft: Math.max(0, daysLeft)
+        };
+      }
+
+      // Validering af fuld licens med network time
+      const isValid = await validateLicenseKey(license.license_key);
+      if (!isValid) {
+        return { isValid: false, daysLeft: 0 };
+      }
+
+      const expiryDate = new Date(license.expiry_date);
+      const daysLeft = Math.ceil((expiryDate.getTime() - networkTime.getTime()) / (1000 * 60 * 60 * 24));
+      
+      return {
+        isValid: daysLeft > 0,
+        daysLeft: Math.max(0, daysLeft)
+      };
+    } catch (err) {
+      console.error('Error checking license:', err);
+      return { isValid: false, daysLeft: 0 };
+    }
   }
 
   async extendLicense(licenseKey: string): Promise<boolean> {
