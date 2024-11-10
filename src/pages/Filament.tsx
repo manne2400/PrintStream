@@ -19,7 +19,7 @@ import { useCurrency } from '../context/CurrencyContext';
 
 const FilamentTypes = [
   'PLA', 'PLA+', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'Nylon', 'HIPS', 'PVA', 
-  'Resin (Standard)', 'Resin (Tough)', 'Resin (Flexible)', 'Resin (Casting)', 'Other'
+  'Resin (Standard)', 'Resin (Tough)', 'Resin (Flexible)', 'Resin (Casting)', 'Resin (Water-Washable)', 'Other'
 ];
 
 interface FilamentFormData {
