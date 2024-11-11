@@ -13,7 +13,7 @@ export interface Filament {
   ams_slot?: number | null
   created_at?: string
   low_stock_alert?: number
-  is_resin?: boolean
+  is_resin: boolean
   resin_exposure?: number
   resin_bottom_exposure?: number
   resin_lift_distance?: number
@@ -127,27 +127,21 @@ export class FilamentOperations {
       }
     }
 
-    const normalizePrice = (price: number) => {
-      return Number(price.toFixed(2));
-    };
-
-    const isResin = filament.type.toLowerCase().includes('resin');
-
     const result = await this.db.run(
       `INSERT INTO filaments (
         name, type, color, weight, price, stock, ams_slot, low_stock_alert,
         is_resin, resin_exposure, resin_bottom_exposure, resin_lift_distance, resin_lift_speed
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        filament.name, 
-        filament.type, 
-        filament.color, 
-        filament.weight, 
-        normalizePrice(filament.price),
-        filament.stock, 
+        filament.name,
+        filament.type,
+        filament.color,
+        filament.weight,
+        filament.price,
+        filament.stock,
         filament.ams_slot,
         filament.low_stock_alert ?? 500,
-        isResin ? 1 : 0,
+        filament.is_resin ? 1 : 0,
         filament.resin_exposure,
         filament.resin_bottom_exposure,
         filament.resin_lift_distance,
@@ -559,10 +553,8 @@ export class SalesOperations {
 
   async addSale(sale: Omit<Sale, 'id' | 'created_at'>): Promise<number> {
     try {
-      // Start en transaktion
       await this.db.run('BEGIN TRANSACTION');
 
-      // Tilføj salget
       const result = await this.db.run(`
         INSERT INTO sales (
           project_id, customer_id, print_job_id, invoice_number,
@@ -591,38 +583,12 @@ export class SalesOperations {
         sale.processing_cost,
         sale.extra_costs,
         sale.currency,
-        sale.shipping_cost || 0 // Default til 0 hvis ikke specificeret
+        sale.shipping_cost
       ]);
 
-      // Opdater print job status til 'completed'
-      await this.db.run(
-        'UPDATE print_jobs SET status = ?, quantity = quantity - ? WHERE id = ?',
-        ['completed', sale.quantity, sale.print_job_id]
-      );
-
-      // Træk fra filament lager
-      const projectFilaments = await this.db.all(`
-        SELECT pf.filament_id, pf.amount, f.stock
-        FROM project_filaments pf
-        JOIN filaments f ON pf.filament_id = f.id
-        WHERE pf.project_id = ?
-      `, [sale.project_id]);
-
-      // Opdater filament beholdning
-      for (const pf of projectFilaments) {
-        const newStock = pf.stock - (pf.amount * sale.quantity);
-        await this.db.run(
-          'UPDATE filaments SET stock = ? WHERE id = ?',
-          [newStock, pf.filament_id]
-        );
-      }
-
-      // Commit transaktionen
       await this.db.run('COMMIT');
-
       return result.lastID;
     } catch (err) {
-      // Hvis noget går galt, ruller vi tilbage
       await this.db.run('ROLLBACK');
       throw err;
     }
@@ -647,10 +613,8 @@ export class SalesOperations {
 
   async deleteSale(id: number): Promise<void> {
     try {
-      // Start en transaktion
       await this.db.run('BEGIN TRANSACTION');
 
-      // Først find invoice_number for det salg vi vil slette
       const sale = await this.db.get(
         'SELECT invoice_number FROM sales WHERE id = ?',
         [id]
@@ -660,16 +624,13 @@ export class SalesOperations {
         throw new Error('Sale not found');
       }
 
-      // Slet alle salg med samme invoice_number
       await this.db.run(
         'DELETE FROM sales WHERE invoice_number = ?',
         [sale.invoice_number]
       );
 
-      // Commit transaktionen
       await this.db.run('COMMIT');
     } catch (err) {
-      // Hvis noget går galt, ruller vi tilbage
       await this.db.run('ROLLBACK');
       throw err;
     }
@@ -910,6 +871,16 @@ export class CustomMaterialTypeOperations {
   }
 
   async addType(type: Omit<CustomMaterialType, 'id' | 'created_at'>): Promise<void> {
+    // Tjek først om navnet allerede eksisterer
+    const existing = await this.db.get(
+      'SELECT * FROM custom_material_types WHERE name = ?',
+      [type.name]
+    );
+
+    if (existing) {
+      throw new Error('A material type with this name already exists');
+    }
+
     await this.db.run(
       'INSERT INTO custom_material_types (name, is_resin) VALUES (?, ?)',
       [type.name, type.is_resin]

@@ -979,7 +979,24 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   };
 
   // Tilføj helper funktion til at tjekke om det er resin
-  const isResinType = (type: string) => type.toLowerCase().includes('resin');
+  const isResinType = (type: string): boolean => {
+    // Tjek først om typen er en af de prædefinerede resin typer
+    const predefinedResinTypes = [
+      'Resin (Standard)',
+      'Resin (Tough)',
+      'Resin (Flexible)',
+      'Resin (Casting)',
+      'Resin (Water-Washable)'
+    ];
+    
+    if (predefinedResinTypes.includes(type)) {
+      return true;
+    }
+
+    // Tjek derefter custom types
+    const customType = customTypes.find(t => t.name === type);
+    return customType?.is_resin ?? false;
+  };
 
   // Kombiner standard og custom types
   const allMaterialTypes = useMemo(() => {
@@ -1270,8 +1287,16 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                   value={formData.type}
                   onChange={(e) => {
                     const selectedType = customTypes.find(t => t.name === e.target.value);
+                    const isResin = isResinType(e.target.value);
+                    
                     handleInputChange('type', e.target.value);
-                    handleInputChange('isResin', selectedType?.is_resin ?? false);
+                    handleInputChange('isResin', isResin);
+                    
+                    // Nulstil AMS hvis det er resin
+                    if (isResin) {
+                      handleInputChange('useAms', false);
+                      handleInputChange('amsSlot', null);
+                    }
                   }}
                   placeholder="Select material type"
                 >

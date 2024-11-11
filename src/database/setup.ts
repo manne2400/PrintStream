@@ -419,6 +419,19 @@ const initializeDatabase = async (): Promise<Database> => {
     );
   `);
 
+  // Tilføj shipping_cost kolonne til sales tabellen hvis den ikke findes
+  try {
+    await exec(`
+      ALTER TABLE sales 
+      ADD COLUMN shipping_cost REAL DEFAULT 0;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
+
   // Opret custom_material_types tabel
   await exec(`
     CREATE TABLE IF NOT EXISTS custom_material_types (

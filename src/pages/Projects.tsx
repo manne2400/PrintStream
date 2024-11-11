@@ -459,8 +459,8 @@ const Projects: React.FC = () => {
       const ops = new ProjectOperations(db);
       
       // Konverter tid til minutter før gemning
-      const totalPrintMinutes = convertToMinutes(printTime);
-      const totalPostProcessingMinutes = convertToMinutes(postProcessingTime);
+      const totalPrintMinutes = (printTime.hours * 60) + printTime.minutes;
+      const totalPostProcessingMinutes = (postProcessingTime.hours * 60) + postProcessingTime.minutes;
       
       const projectId = await ops.addProject({
         name: formData.name,
