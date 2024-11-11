@@ -442,7 +442,13 @@ const Settings: React.FC = () => {
             </Flex>
             <VStack align="stretch" spacing={4}>
               <Text>Days Remaining: {licenseInfo.daysLeft}</Text>
-              <Text>Expiry Date: {new Date(licenseInfo.expiryDate).toLocaleDateString()}</Text>
+              <Text>
+                Expiry Date: {
+                  licenseInfo.expiryDate ? 
+                    new Date(licenseInfo.expiryDate).toLocaleDateString() : 
+                    new Date(Date.now() + (licenseInfo.daysLeft * 24 * 60 * 60 * 1000)).toLocaleDateString()
+                }
+              </Text>
               <FormControl>
                 <FormLabel>Enter License Key</FormLabel>
                 <Input

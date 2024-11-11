@@ -1,0 +1,27 @@
+For at kompilere til Linux skal du bruge følgende værktøjer:
+Grundlæggende værktøjer:
+Node.js (version 18+)
+npm eller yarn
+Git
+Build-afhængigheder:
+build-essential pakken
+Python (version 3.x)
+gcc og g++
+make
+Systembiblioteker:
+libx11-dev
+libxtst-dev
+libpng-dev
+libxkbfile-dev
+libsecret-1-dev
+libasound2-dev
+På en Debian/Ubuntu-baseret distribution kan du installere disse med:
+
+sudo apt-get update
+sudo apt-get install -y build-essential python3 gcc g++ make libx11-dev libxtst-dev libpng-dev libxkbfile-dev libsecret-1-dev libasound2-dev
+
+Efter installation af disse afhængigheder, kan du bygge applikationen ved at køre:
+npm install
+npm run rebuild (for at rebuilde native moduler)
+npm run dist:linux
+Dette vil generere en Linux-kompatibel distribution i dist-mappen.

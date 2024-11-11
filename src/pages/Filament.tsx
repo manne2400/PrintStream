@@ -793,38 +793,32 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     try {
       const db = await initializeDatabase();
       const ops = new FilamentOperations(db);
-      await ops.updateFilament(id, updates);
       
-      // Opdater filaments array direkte
-      setFilaments(prevFilaments => 
-        prevFilaments.map(filament => 
-          filament.id === id 
-            ? { ...filament, ...updates }
-            : filament
-        )
-      );
-      
-      // Vis kun én toast besked ved stock opdatering
-      if (updates.stock !== undefined) {
-        const filament = filaments.find(f => f.id === id);
-        if (filament) {
-          if (updates.stock > (filament.low_stock_alert ?? 500)) {
-            setCheckedFilaments(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(id);
-              return newSet;
-            });
-          }
-          
-          toast({
-            title: 'Stock Updated',
-            description: `New stock level: ${updates.stock}g`,
-            status: 'success',
-            duration: 2000,
-            isClosable: true,
-          });
-        }
+      // Hvis der er resin_settings, split dem ud i separate felter
+      if ('resin_settings' in updates) {
+        const { resin_settings, ...otherUpdates } = updates;
+        await ops.updateFilament(id, {
+          ...otherUpdates,
+          resin_exposure: resin_settings?.exposure,
+          resin_bottom_exposure: resin_settings?.bottomExposure,
+          resin_lift_distance: resin_settings?.liftDistance,
+          resin_lift_speed: resin_settings?.liftSpeed
+        });
+      } else {
+        // Ellers opdater normalt
+        await ops.updateFilament(id, updates);
       }
+
+      // Opdater UI
+      await loadFilaments();
+      
+      toast({
+        title: 'Success',
+        description: 'Filament updated successfully',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
     } catch (err) {
       console.error('Failed to update filament:', err);
       toast({
