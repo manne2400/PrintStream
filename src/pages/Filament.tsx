@@ -16,10 +16,11 @@ import initializeDatabase from '../database/setup';
 import { FilamentOperations, Filament as FilamentType } from '../database/operations';
 import { useNotifications } from '../context/NotificationContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { CustomMaterialType, CustomMaterialTypeOperations } from '../database/operations';
 
 const FilamentTypes = [
   'PLA', 'PLA+', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'Nylon', 'HIPS', 'PVA', 
-  'Resin (Standard)', 'Resin (Tough)', 'Resin (Flexible)', 'Resin (Casting)', 'Resin (Water-Washable)', 'Other'
+  'Resin (Standard)', 'Resin (Tough)', 'Resin (Flexible)', 'Resin (Casting)', 'Resin (Water-Washable)'
 ];
 
 interface FilamentFormData {
@@ -654,9 +655,16 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   const [rolls, setRolls] = useState<number>(1);
   const [infoModalData, setInfoModalData] = useState<FilamentType | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [customTypes, setCustomTypes] = useState<CustomMaterialType[]>([]);
+  const [showCustomTypeModal, setShowCustomTypeModal] = useState(false);
+  const [newCustomType, setNewCustomType] = useState({ name: '', is_resin: false });
 
   useEffect(() => {
     loadFilaments();
+  }, []);
+
+  useEffect(() => {
+    loadCustomTypes();
   }, []);
 
   const loadFilaments = async () => {
@@ -681,6 +689,17 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         duration: 5000,
         isClosable: true,
       });
+    }
+  };
+
+  const loadCustomTypes = async () => {
+    try {
+      const db = await initializeDatabase();
+      const ops = new CustomMaterialTypeOperations(db);
+      const types = await ops.getAllTypes();
+      setCustomTypes(types);
+    } catch (err) {
+      console.error('Failed to load custom types:', err);
     }
   };
 
@@ -962,6 +981,42 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   // Tilføj helper funktion til at tjekke om det er resin
   const isResinType = (type: string) => type.toLowerCase().includes('resin');
 
+  // Kombiner standard og custom types
+  const allMaterialTypes = useMemo(() => {
+    return [
+      ...FilamentTypes,
+      ...customTypes.map(t => t.name)
+    ];
+  }, [customTypes]);
+
+  // Tilføj handler for ny custom type
+  const handleAddCustomType = async () => {
+    try {
+      const db = await initializeDatabase();
+      const ops = new CustomMaterialTypeOperations(db);
+      await ops.addType(newCustomType);
+      await loadCustomTypes();
+      setShowCustomTypeModal(false);
+      setNewCustomType({ name: '', is_resin: false });
+      toast({
+        title: 'Success',
+        description: 'New material type added successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (err) {
+      console.error('Failed to add custom type:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to add new material type',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
     <Box p={4}>
       <Box variant="stats-card">
@@ -980,6 +1035,13 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               icon={<Icon as={ArrowPathIcon} />}
               onClick={handleRefresh}
             />
+            <Button
+              leftIcon={<Icon as={PlusIcon} boxSize={5} />}
+              colorScheme="teal"
+              onClick={() => setShowCustomTypeModal(true)}
+            >
+              Add Material Type
+            </Button>
             <Button
               leftIcon={<Icon as={PlusIcon} boxSize={5} />}
               colorScheme="blue"
@@ -1206,10 +1268,14 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                 <FormLabel>Type</FormLabel>
                 <Select
                   value={formData.type}
-                  onChange={(e) => handleInputChange('type', e.target.value)}
-                  placeholder="Select filament type"
+                  onChange={(e) => {
+                    const selectedType = customTypes.find(t => t.name === e.target.value);
+                    handleInputChange('type', e.target.value);
+                    handleInputChange('isResin', selectedType?.is_resin ?? false);
+                  }}
+                  placeholder="Select material type"
                 >
-                  {FilamentTypes.map(type => (
+                  {allMaterialTypes.map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </Select>
@@ -1500,6 +1566,47 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
           filament={infoModalData}
         />
       )}
+
+      {/* Custom Type Modal */}
+      <Modal isOpen={showCustomTypeModal} onClose={() => setShowCustomTypeModal(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add New Material Type</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>Name</FormLabel>
+                <Input
+                  value={newCustomType.name}
+                  onChange={(e) => setNewCustomType(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Material Type</FormLabel>
+                <Select
+                  value={newCustomType.is_resin ? 'resin' : 'filament'}
+                  onChange={(e) => setNewCustomType(prev => ({ 
+                    ...prev, 
+                    is_resin: e.target.value === 'resin' 
+                  }))}
+                >
+                  <option value="filament">Filament</option>
+                  <option value="resin">Resin</option>
+                </Select>
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={() => setShowCustomTypeModal(false)}>
+              Cancel
+            </Button>
+            <Button colorScheme="blue" onClick={handleAddCustomType}>
+              Add Type
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

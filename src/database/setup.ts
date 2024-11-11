@@ -419,6 +419,16 @@ const initializeDatabase = async (): Promise<Database> => {
     );
   `);
 
+  // Opret custom_material_types tabel
+  await exec(`
+    CREATE TABLE IF NOT EXISTS custom_material_types (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      is_resin BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   return { run, get, all, exec }
 }
 

@@ -101,6 +101,13 @@ export interface Sale {
   created_at?: string;
 }
 
+export interface CustomMaterialType {
+  id?: number;
+  name: string;
+  is_resin: boolean;
+  created_at?: string;
+}
+
 export class FilamentOperations {
   private db: Database
 
@@ -892,5 +899,20 @@ export class LicenseOperations {
       if (parts1[i] < parts2[i]) return -1;
     }
     return 0;
+  }
+}
+
+export class CustomMaterialTypeOperations {
+  constructor(private db: Database) {}
+
+  async getAllTypes(): Promise<CustomMaterialType[]> {
+    return this.db.all('SELECT * FROM custom_material_types ORDER BY name');
+  }
+
+  async addType(type: Omit<CustomMaterialType, 'id' | 'created_at'>): Promise<void> {
+    await this.db.run(
+      'INSERT INTO custom_material_types (name, is_resin) VALUES (?, ?)',
+      [type.name, type.is_resin]
+    );
   }
 } 
