@@ -1040,7 +1040,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               colorScheme="teal"
               onClick={() => setShowCustomTypeModal(true)}
             >
-              Add Material Type
+              Add/Remove Material Type
             </Button>
             <Button
               leftIcon={<Icon as={PlusIcon} boxSize={5} />}
@@ -1571,10 +1571,11 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       <Modal isOpen={showCustomTypeModal} onClose={() => setShowCustomTypeModal(false)}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Add New Material Type</ModalHeader>
+          <ModalHeader>Material Types</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <VStack spacing={4}>
+            {/* Form til at tilføje ny type */}
+            <VStack spacing={4} mb={6}>
               <FormControl isRequired>
                 <FormLabel>Name</FormLabel>
                 <Input
@@ -1595,14 +1596,62 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                   <option value="resin">Resin</option>
                 </Select>
               </FormControl>
+              <Button colorScheme="blue" onClick={handleAddCustomType} width="100%">
+                Add New Type
+              </Button>
             </VStack>
+
+            {/* Liste over eksisterende typer */}
+            <Box borderTopWidth={1} pt={4}>
+              <Text fontWeight="bold" mb={3}>Existing Custom Types</Text>
+              <VStack align="stretch" spacing={2}>
+                {customTypes.map(type => (
+                  <Flex key={type.id} justify="space-between" align="center" p={2} borderWidth={1} borderRadius="md">
+                    <Box>
+                      <Text>{type.name}</Text>
+                      <Text fontSize="sm" color="gray.500">
+                        {type.is_resin ? 'Resin' : 'Filament'}
+                      </Text>
+                    </Box>
+                    <IconButton
+                      aria-label="Delete type"
+                      icon={<Icon as={TrashIcon} />}
+                      size="sm"
+                      colorScheme="red"
+                      variant="ghost"
+                      onClick={async () => {
+                        try {
+                          const db = await initializeDatabase();
+                          const ops = new CustomMaterialTypeOperations(db);
+                          await ops.deleteType(type.id!);
+                          await loadCustomTypes();
+                          toast({
+                            title: 'Success',
+                            description: 'Material type deleted successfully',
+                            status: 'success',
+                            duration: 3000,
+                            isClosable: true,
+                          });
+                        } catch (err) {
+                          console.error('Failed to delete material type:', err);
+                          toast({
+                            title: 'Error',
+                            description: 'Failed to delete material type',
+                            status: 'error',
+                            duration: 5000,
+                            isClosable: true,
+                          });
+                        }
+                      }}
+                    />
+                  </Flex>
+                ))}
+              </VStack>
+            </Box>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={() => setShowCustomTypeModal(false)}>
-              Cancel
-            </Button>
-            <Button colorScheme="blue" onClick={handleAddCustomType}>
-              Add Type
+            <Button onClick={() => setShowCustomTypeModal(false)}>
+              Close
             </Button>
           </ModalFooter>
         </ModalContent>

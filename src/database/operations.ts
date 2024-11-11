@@ -915,4 +915,11 @@ export class CustomMaterialTypeOperations {
       [type.name, type.is_resin]
     );
   }
+
+  async deleteType(id: number): Promise<void> {
+    await this.db.run(
+      'DELETE FROM custom_material_types WHERE id = ?',
+      [id]
+    );
+  }
 } 
