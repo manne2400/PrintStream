@@ -1,4 +1,3 @@
-
 # PrintStream Dokumentation
 
 ## 🚀 Projektoversigt
@@ -116,9 +115,44 @@ CREATE TABLE filaments (
   price REAL NOT NULL,
   stock REAL NOT NULL,
   ams_slot INTEGER,
+  low_stock_alert REAL DEFAULT 500,
+  is_resin BOOLEAN DEFAULT FALSE,
+  resin_exposure REAL,
+  resin_bottom_exposure REAL,
+  resin_lift_distance REAL,
+  resin_lift_speed REAL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```
+
+#### Filament Typer
+- **FDM Filamenter**: PLA, PLA+, PETG, ABS, TPU, ASA, PC, Nylon, HIPS, PVA
+- **Resin Typer**: Standard, Tough, Flexible, Casting, Water-Washable
+
+#### Måleenheder
+- **FDM Filament**: Gram (g)
+- **Resin**: Milliliter (mL)
+
+#### Særlige Funktioner
+1. **AMS Integration**
+   - Slots 1-16 tilgængelige
+   - Kun for FDM filamenter
+   - Unikke slot-numre påkrævet
+
+2. **Resin Håndtering**
+   - Separate print indstillinger
+   - Specialiserede måleenheder
+   - Deaktiveret AMS funktionalitet
+
+3. **Lager Advarsler**
+   - Automatisk notifikation ved lav beholdning
+   - Justerbar advarselsgrænse
+   - Standard grænse: 500g/mL
+
+4. **Print Integration**
+   - Automatisk lageropdatering
+   - Materialeforbrugsberegning
+   - Kostprisberegning
 
 ### Projects
 

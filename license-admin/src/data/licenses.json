@@ -40,5 +40,11 @@
     "days": 30,
     "licenseKey": "6fc9-3a002-7491-4220",
     "generatedAt": "2024-11-07T18:04:07.330Z"
+  },
+  {
+    "customerId": "Dako",
+    "days": 365,
+    "licenseKey": "0020-2c1ac3-4158-afef",
+    "generatedAt": "2024-11-12T07:42:08.607Z"
   }
 ]

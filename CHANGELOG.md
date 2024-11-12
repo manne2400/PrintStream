@@ -1,6 +1,28 @@
 # Changelog
 
-## [0.2.7] - 2024-11-13
+## [0.2.9] - 2024-11-11
+
+### Added
+- Added custom material types management
+  - New database table for custom material types
+  - UI for adding/removing custom material types
+  - Support for both filament and resin custom types
+- Added automatic resin detection for predefined resin types
+- Added resin settings display for all resin materials
+
+### Changed
+- Removed "Other" option from material type selection
+- Updated material type handling to include custom types
+- Modified sales process to prevent double stock reduction
+- Fixed project time calculation (removed unintended multiplication)
+
+### Fixed
+- Fixed issue with stock being reduced twice (at print and sale)
+- Fixed incorrect time calculation in project creation
+- Fixed resin type detection for predefined types
+- Fixed material type selection and resin settings display
+
+## [0.2.7] - 2024-11-10
 
 ### Added
 - Added shipping cost column to database
