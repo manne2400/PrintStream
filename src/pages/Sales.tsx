@@ -284,6 +284,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
     try {
       const db = await initializeDatabase();
       const salesOps = new SalesOperations(db);
+      const printJobOps = new PrintJobOperations(db);
       const totals = calculateTotals();
       
       const settingsOps = new SettingsOperations(db);
@@ -295,6 +296,10 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
 
       // Opret et salg for hvert item
       for (const item of formData.items) {
+        await printJobOps.updatePrintJob(item.printJobId, {
+          quantity: (await printJobOps.getPrintJobById(item.printJobId)).quantity - item.quantity
+        });
+
         await salesOps.addSale({
           project_id: item.printJobId,
           customer_id: formData.customerId ? parseInt(formData.customerId) : null,
