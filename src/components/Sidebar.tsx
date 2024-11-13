@@ -19,7 +19,7 @@ const Sidebar: React.FC = () => {
   
   const navigation = [
     { name: 'Dashboard', icon: HomeIcon, path: '/dashboard' },
-    { name: 'Filament', icon: CubeIcon, path: '/filament' },
+    { name: 'Filament & Resin', icon: CubeIcon, path: '/filament' },
     { name: 'Print Projects', icon: FolderIcon, path: '/projects' },
     { name: 'Print Inventory', icon: PrinterIcon, path: '/print-inventory' },
     { name: 'Customers', icon: UserGroupIcon, path: '/customers' },

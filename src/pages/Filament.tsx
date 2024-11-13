@@ -977,7 +977,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               colorScheme="blue"
               onClick={onOpen}
             >
-              Add New Filament
+              Add New Material
             </Button>
           </Flex>
         </Flex>
@@ -1218,7 +1218,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Weight per Roll (g)</FormLabel>
+                <FormLabel>Weight per Roll ({formData.isResin ? 'mL' : 'g'})</FormLabel>
                 <NumberInput
                   value={formData.weight}
                   onChange={(value) => setFormData(prev => ({ ...prev, weight: parseInt(value) }))}
@@ -1247,7 +1247,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                   </NumberInputStepper>
                 </NumberInput>
                 <Text fontSize="sm" color="gray.500" mt={1}>
-                  Total stock: {(formData.weight * rolls).toLocaleString()}g
+                  Total stock: {(formData.weight * rolls).toLocaleString()}{formData.isResin ? 'mL' : 'g'}
                 </Text>
               </FormControl>
 
@@ -1373,7 +1373,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               )}
 
               <FormControl>
-                <FormLabel>Low Stock Alert (g)</FormLabel>
+                <FormLabel>Low Stock Alert ({formData.isResin ? 'mL' : 'g'})</FormLabel>
                 <NumberInput
                   value={formData.lowStockAlert}
                   onChange={(value) => handleInputChange('lowStockAlert', parseInt(value))}
