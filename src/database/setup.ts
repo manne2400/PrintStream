@@ -208,33 +208,7 @@ const initializeDatabase = async (): Promise<Database> => {
     );
   `);
 
-  // Tilføj shipping_cost kolonne til sales tabellen hvis den ikke findes
-  try {
-    await exec(`
-      ALTER TABLE sales 
-      ADD COLUMN shipping_cost REAL DEFAULT 0;
-    `);
-  } catch (err: unknown) {
-    const error = err as Error;
-    if (!error.message.includes('duplicate column name')) {
-      throw err;
-    }
-  }
-
-  // Tilføj status kolonne hvis den ikke findes
-  try {
-    await exec(`
-      ALTER TABLE print_jobs 
-      ADD COLUMN status TEXT NOT NULL DEFAULT 'pending';
-    `);
-  } catch (err: unknown) {
-    const error = err as Error;
-    if (!error.message.includes('duplicate column name')) {
-      throw err;
-    }
-  }
-
-  // Tilføj sales tabel med alle nødvendige felter
+  // Først opretter vi sales tabellen
   await exec(`
     CREATE TABLE IF NOT EXISTS sales (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -256,6 +230,7 @@ const initializeDatabase = async (): Promise<Database> => {
       processing_cost REAL NOT NULL,
       extra_costs REAL NOT NULL,
       currency TEXT NOT NULL,
+      shipping_cost REAL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects (id),
       FOREIGN KEY (customer_id) REFERENCES customers (id),
@@ -370,7 +345,7 @@ const initializeDatabase = async (): Promise<Database> => {
     });
   }
 
-  // Tilføj resin settings kolonner hvis de ikke findes
+  // Tilføj resin kolonner hvis de ikke findes
   try {
     await exec(`
       ALTER TABLE filaments 
@@ -378,19 +353,19 @@ const initializeDatabase = async (): Promise<Database> => {
     `);
     await exec(`
       ALTER TABLE filaments 
-      ADD COLUMN resin_exposure REAL;
+      ADD COLUMN resin_exposure REAL DEFAULT NULL;
     `);
     await exec(`
       ALTER TABLE filaments 
-      ADD COLUMN resin_bottom_exposure REAL;
+      ADD COLUMN resin_bottom_exposure REAL DEFAULT NULL;
     `);
     await exec(`
       ALTER TABLE filaments 
-      ADD COLUMN resin_lift_distance REAL;
+      ADD COLUMN resin_lift_distance REAL DEFAULT NULL;
     `);
     await exec(`
       ALTER TABLE filaments 
-      ADD COLUMN resin_lift_speed REAL;
+      ADD COLUMN resin_lift_speed REAL DEFAULT NULL;
     `);
   } catch (err: unknown) {
     const error = err as Error;
@@ -398,6 +373,36 @@ const initializeDatabase = async (): Promise<Database> => {
       throw err;
     }
   }
+
+  // Opret sales tabellen med alle nødvendige kolonner
+  await exec(`
+    CREATE TABLE IF NOT EXISTS sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      customer_id INTEGER,
+      print_job_id INTEGER NOT NULL,
+      invoice_number TEXT NOT NULL,
+      sale_date TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      unit_price REAL NOT NULL,
+      total_price REAL NOT NULL,
+      payment_status TEXT NOT NULL,
+      payment_due_date TEXT NOT NULL,
+      notes TEXT,
+      project_name TEXT NOT NULL,
+      customer_name TEXT,
+      material_cost REAL NOT NULL,
+      printing_cost REAL NOT NULL,
+      processing_cost REAL NOT NULL,
+      extra_costs REAL NOT NULL,
+      currency TEXT NOT NULL,
+      shipping_cost REAL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects (id),
+      FOREIGN KEY (customer_id) REFERENCES customers (id),
+      FOREIGN KEY (print_job_id) REFERENCES print_jobs (id)
+    );
+  `);
 
   return { run, get, all, exec }
 }

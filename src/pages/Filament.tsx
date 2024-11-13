@@ -18,7 +18,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { useCurrency } from '../context/CurrencyContext';
 
 const FilamentTypes = [
-  'PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'Nylon', 'HIPS', 'PVA', 
+  'PLA', 'PLA+', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'Nylon', 'HIPS', 'PVA', 
   'Resin (Standard)', 'Resin (Tough)', 'Resin (Flexible)', 'Resin (Casting)', 'Other'
 ];
 
