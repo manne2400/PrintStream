@@ -651,6 +651,20 @@ export class SalesOperations {
       throw err;
     }
   }
+
+  async getSaleById(id: number): Promise<Sale | null> {
+    return this.db.get(
+      'SELECT * FROM sales WHERE id = ?',
+      [id]
+    );
+  }
+
+  async updatePaymentStatusByInvoice(invoiceNumber: string, status: string): Promise<void> {
+    await this.db.run(
+      'UPDATE sales SET payment_status = ? WHERE invoice_number = ?',
+      [status, invoiceNumber]
+    );
+  }
 }
 
 export class LicenseOperations {

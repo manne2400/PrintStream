@@ -782,8 +782,14 @@ const Sales: React.FC = () => {
   const handleUpdatePaymentStatus = async (id: number, status: 'pending' | 'paid' | 'cancelled') => {
     try {
       const db = await initializeDatabase();
-      const ops = new SalesOperations(db);
-      await ops.updatePaymentStatus(id, status);
+      const salesOps = new SalesOperations(db);
+      
+      // Hent invoice_number for det valgte salg
+      const sale = await salesOps.getSaleById(id);
+      if (!sale) throw new Error('Sale not found');
+      
+      // Opdater status for alle salg med samme invoice_number
+      await salesOps.updatePaymentStatusByInvoice(sale.invoice_number, status);
       
       await loadSales();
       toast({
