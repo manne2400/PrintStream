@@ -79,6 +79,9 @@ const Reports: React.FC = () => {
       // Hent salgsdata
       const allSales = await salesOps.getAllSales();
       
+      // Hent alle kunder for at få total antal
+      const allCustomers = await customerOps.getAllCustomers();
+      
       // Filtrer baseret på valgt tidsperiode
       const filteredSales = allSales.filter(sale => {
         const saleDate = new Date(sale.sale_date);
@@ -90,6 +93,20 @@ const Reports: React.FC = () => {
         }
         return (now.getTime() - saleDate.getTime()) <= 365 * 24 * 60 * 60 * 1000;
       });
+
+      // Find unikke aktive kunder i den valgte periode
+      const activeCustomerIds = new Set(
+        filteredSales
+          .filter(sale => sale.customer_id)
+          .map(sale => sale.customer_id)
+      );
+
+      // Opdater customer stats
+      setCustomerStats(prev => ({
+        ...prev,
+        totalCustomers: allCustomers.length,
+        activeCustomers: activeCustomerIds.size
+      }));
 
       // Beregn statistik
       const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.total_price, 0);
@@ -142,38 +159,6 @@ const Reports: React.FC = () => {
       setTopProducts(Array.from(productMap.values())
         .sort((a, b) => b.total_revenue - a.total_revenue)
         .slice(0, 5));
-
-      // Beregn kundestatistik
-      const customerMap = new Map<number, { 
-        name: string;
-        total_purchases: number;
-        total_spent: number;
-      }>();
-
-      // Gennemgå alle salg og opbyg kundestatistik
-      filteredSales.forEach(sale => {
-        if (sale.customer_id) {
-          const customer = customerMap.get(sale.customer_id) || {
-            name: sale.customer_name || 'Unknown',
-            total_purchases: 0,
-            total_spent: 0
-          };
-
-          customer.total_purchases += sale.quantity;
-          customer.total_spent += sale.total_price;
-          customerMap.set(sale.customer_id, customer);
-        }
-      });
-
-      // Konverter map til array og sorter efter total_spent
-      const topCustomers = Array.from(customerMap.values())
-        .sort((a, b) => b.total_spent - a.total_spent)
-        .slice(0, 5);  // Tag kun top 5
-
-      setCustomerStats(prev => ({
-        ...prev,
-        topCustomers
-      }));
 
       // Beregn lagerstatistik
       const filaments = await filamentOps.getAllFilaments();
