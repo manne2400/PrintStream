@@ -619,6 +619,9 @@ const FilamentInfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, filament
   );
 };
 
+// Tilføj pagination konstanter
+const ITEMS_PER_PAGE = 10;
+
 const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilaments }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -650,6 +653,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   const { currency } = useCurrency();
   const [rolls, setRolls] = useState<number>(1);
   const [infoModalData, setInfoModalData] = useState<FilamentType | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     loadFilaments();
@@ -910,6 +914,15 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     });
   }, [filaments, searchQuery]);
 
+  // Beregn total antal sider
+  const totalPages = Math.ceil(filteredFilaments.length / ITEMS_PER_PAGE);
+
+  // Få den aktuelle sides filaments
+  const currentFilaments = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredFilaments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredFilaments, currentPage]);
+
   const sortedFilaments = useMemo(() => {
     const sorted = [...filteredFilaments].sort((a, b) => {
       if (a[sortConfig.key] === null) return 1;
@@ -1042,7 +1055,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
             </Tr>
           </Thead>
           <Tbody>
-            {sortedFilaments.map((filament) => (
+            {currentFilaments.map((filament) => (
               <Tr key={filament.id}>
                 <Td>{filament.name}</Td>
                 <Td>{filament.type}</Td>
@@ -1153,6 +1166,29 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
             ))}
           </Tbody>
         </Table>
+
+        {/* Pagination kontroller */}
+        <Flex justify="center" mt={4} gap={2}>
+          <Button
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            isDisabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          
+          <Text alignSelf="center">
+            Page {currentPage} of {totalPages}
+          </Text>
+          
+          <Button
+            size="sm"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            isDisabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+        </Flex>
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} size="md">
