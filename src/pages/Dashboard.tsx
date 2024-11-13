@@ -85,7 +85,7 @@ const Dashboard: React.FC = () => {
       // Beregn total omsætning og profit
       const totalRevenue = sales.reduce((sum, sale) => sum + sale.total_price, 0);
       
-      // Beregn profit på samme måde som i Reports
+      // Beregn profit
       const totalProfit = sales.reduce((sum, sale) => {
         const costPerUnit = (
           sale.material_cost + 
@@ -97,14 +97,14 @@ const Dashboard: React.FC = () => {
         return sum + (sale.total_price - totalCost);
       }, 0);
 
-      const profitMargin = totalRevenue ? (totalProfit / totalRevenue) * 100 : 0;
+      // Tæl unikke invoice numre for at få det korrekte antal ordrer
+      const uniqueInvoices = new Set(sales.map(sale => sale.invoice_number)).size;
 
       setStats(prev => ({
         ...prev,
         totalRevenue,
         totalProfit,
-        profitMargin,
-        totalOrders: sales.length
+        totalOrders: uniqueInvoices
       }));
 
       // Hent filament data
@@ -150,8 +150,14 @@ const Dashboard: React.FC = () => {
           date,
           revenue: daySales.reduce((sum, s) => sum + s.total_price, 0),
           profit: daySales.reduce((sum, s) => {
-            const costs = s.material_cost + s.printing_cost + s.processing_cost + s.extra_costs;
-            return sum + (s.total_price - costs);
+            const costPerUnit = (
+              s.material_cost + 
+              s.printing_cost + 
+              s.processing_cost + 
+              s.extra_costs
+            );
+            const totalCost = costPerUnit * s.quantity;
+            return sum + (s.total_price - totalCost);
           }, 0)
         };
       });
