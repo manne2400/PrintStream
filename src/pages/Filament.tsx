@@ -914,15 +914,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     });
   }, [filaments, searchQuery]);
 
-  // Beregn total antal sider
-  const totalPages = Math.ceil(filteredFilaments.length / ITEMS_PER_PAGE);
-
-  // Få den aktuelle sides filaments
-  const currentFilaments = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredFilaments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredFilaments, currentPage]);
-
+  // Flyt sortedFilaments før currentFilaments
   const sortedFilaments = useMemo(() => {
     const sorted = [...filteredFilaments].sort((a, b) => {
       if (a[sortConfig.key] === null) return 1;
@@ -939,6 +931,15 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     });
     return sorted;
   }, [filteredFilaments, sortConfig]);
+
+  // Beregn total antal sider baseret på sorterede filaments
+  const totalPages = Math.ceil(filteredFilaments.length / ITEMS_PER_PAGE);
+
+  // Få den aktuelle sides filaments fra de sorterede filaments
+  const currentFilaments = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return sortedFilaments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [sortedFilaments, currentPage]);
 
   const handleSort = (key: keyof FilamentType) => {
     setSortConfig(current => ({
