@@ -206,7 +206,7 @@ const About: React.FC = () => {
               Join Discord Community
             </Button>
             <Text fontSize="sm">
-              Version 0.2.7 | © 2024 PrintStream. All rights reserved.
+              Version 0.2.8 | © 2024 PrintStream. All rights reserved.
             </Text>
           </Box>
         </VStack>

@@ -1158,7 +1158,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       <Modal isOpen={isOpen} onClose={onClose} size="md">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Add New Filament</ModalHeader>
+          <ModalHeader>Add New Material</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <VStack spacing={4}>
