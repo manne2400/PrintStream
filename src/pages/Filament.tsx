@@ -138,7 +138,7 @@ const CopyFilamentModal: React.FC<CopyModalProps> = ({ isOpen, onClose, filament
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Copy Filament</ModalHeader>
+        <ModalHeader>Copy Material</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4}>
@@ -333,7 +333,7 @@ const EditFilamentModal: React.FC<EditModalProps> = ({ isOpen, onClose, filament
     <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Edit Filament</ModalHeader>
+        <ModalHeader>Edit Material</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4}>
@@ -555,7 +555,7 @@ const FilamentInfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, filament
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Filament Information</ModalHeader>
+        <ModalHeader>Material Information</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4} align="stretch">
@@ -871,10 +871,10 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       });
       setCopyModalData(null);
     } catch (err) {
-      console.error('Failed to copy filament:', err);
+      console.error('Failed to copy Material:', err);
       toast({
         title: 'Error',
-        description: 'Failed to copy filament',
+        description: 'Failed to copy Material',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -905,10 +905,10 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       });
       setDeleteFilament(null);
     } catch (err) {
-      console.error('Failed to delete filament:', err);
+      console.error('Failed to delete Material:', err);
       toast({
         title: 'Error',
-        description: 'Failed to delete filament',
+        description: 'Failed to delete Material',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -1317,24 +1317,26 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
 
               <FormControl isRequired>
                 <FormLabel>Price per kg ({currency})</FormLabel>
-                <NumberInput
-                  value={formData.pricePerKg}
-                  onChange={(valueString) => {
-                    const value = parseFloat(valueString);
-                    if (!isNaN(value)) {
-                      handleInputChange('pricePerKg', value);
+                <Editable
+                  placeholder="0,00"
+                  defaultValue={formData.pricePerKg.toFixed(2).replace('.', ',')}
+                  onChange={(value) => {
+                    const cleanValue = value.replace(/[^\d,.]/g, '').replace(/,/g, '.');
+                    const parts = cleanValue.split('.');
+                    const finalValue = parts.length > 1 
+                      ? `${parts[0]}.${parts[1].slice(0, 2)}`
+                      : cleanValue;
+                    
+                    const numericValue = parseFloat(finalValue);
+                    if (!isNaN(numericValue)) {
+                      handleInputChange('pricePerKg', numericValue);
                     }
                   }}
-                  min={0}
-                  precision={2}
-                  step={0.1}
+                  startWithEditView
                 >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
+                  <EditablePreview />
+                  <EditableInput />
+                </Editable>
               </FormControl>
 
               <FormControl isRequired>
@@ -1537,7 +1539,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         <Modal isOpen={deleteFilament !== null} onClose={() => setDeleteFilament(null)}>
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader>Delete Filament</ModalHeader>
+            <ModalHeader>Delete Material</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               <Text>
@@ -1600,7 +1602,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
             {/* Form til at tilføje ny type */}
             <VStack spacing={4} mb={6}>
               <FormControl isRequired>
-                <FormLabel>Type Name</FormLabel>
+                <FormLabel>Name</FormLabel>
                 <Input
                   value={newCustomType.name}
                   onChange={(e) => setNewCustomType(prev => ({ ...prev, name: e.target.value }))}
