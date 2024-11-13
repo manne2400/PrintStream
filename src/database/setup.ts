@@ -183,11 +183,13 @@ const initializeDatabase = async (): Promise<Database> => {
       INSERT INTO settings (
         printer_hourly_rate,
         post_processing_cost,
-        currency
+        currency,
+        dark_mode
       ) VALUES (
         100,
         100,
-        'EUR'
+        'EUR',
+        1
       );
     `);
   }
