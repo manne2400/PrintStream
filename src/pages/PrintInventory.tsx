@@ -320,13 +320,14 @@ const PrintInventory: React.FC = () => {
     }
   };
 
-  // Tilføj søgefunktion
+  // Tilføj filtrering af print jobs
   const filteredPrintJobs = useMemo(() => {
     return printJobs.filter(job => {
       const searchLower = searchQuery.toLowerCase();
       return (
         job.project_name?.toLowerCase().includes(searchLower) ||
-        job.customer_name?.toLowerCase().includes(searchLower)
+        job.customer_name?.toLowerCase().includes(searchLower) ||
+        job.status.toLowerCase().includes(searchLower)
       );
     });
   }, [printJobs, searchQuery]);
@@ -409,7 +410,7 @@ const PrintInventory: React.FC = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {printJobs.map((job) => (
+            {filteredPrintJobs.map((job) => (
               <Tr key={job.id}>
                 <Td>{job.project_name}</Td>
                 <Td>{job.date}</Td>

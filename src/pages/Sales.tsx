@@ -738,10 +738,21 @@ const Sales: React.FC = () => {
       <Icon as={ChevronDownIcon} w={4} h={4} />;
   };
 
+  const filteredSales = useMemo(() => {
+    return sales.filter(sale => {
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        sale.project_name?.toLowerCase().includes(searchLower) ||
+        sale.customer_name?.toLowerCase().includes(searchLower) ||
+        sale.invoice_number?.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [sales, searchQuery]);
+
   const groupedSales = useMemo(() => {
     const groups = new Map<string, GroupedSale>();
     
-    sales.forEach(sale => {
+    filteredSales.forEach(sale => {
       const existing = groups.get(sale.invoice_number);
       if (existing) {
         // Tilføj til eksisterende gruppe
@@ -777,7 +788,7 @@ const Sales: React.FC = () => {
     }
 
     return Array.from(groups.values());
-  }, [sales]);
+  }, [filteredSales]);
 
   const handleUpdatePaymentStatus = async (id: number, status: 'pending' | 'paid' | 'cancelled') => {
     try {
