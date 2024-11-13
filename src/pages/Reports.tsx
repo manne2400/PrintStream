@@ -101,6 +101,9 @@ const Reports: React.FC = () => {
           .map(sale => sale.customer_id)
       );
 
+      // Tæl unikke invoice numre for at få det korrekte antal ordrer
+      const uniqueInvoices = new Set(filteredSales.map(sale => sale.invoice_number)).size;
+
       // Opdater customer stats
       setCustomerStats(prev => ({
         ...prev,
@@ -124,8 +127,8 @@ const Reports: React.FC = () => {
       setSalesStats({
         totalRevenue,
         totalProfit,
-        totalSales: filteredSales.length,
-        averageOrderValue: filteredSales.length ? totalRevenue / filteredSales.length : 0,
+        totalSales: uniqueInvoices,
+        averageOrderValue: uniqueInvoices ? totalRevenue / uniqueInvoices : 0,
         profitMargin: totalRevenue ? (totalProfit / totalRevenue) * 100 : 0
       });
 
