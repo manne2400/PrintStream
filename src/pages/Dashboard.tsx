@@ -80,7 +80,26 @@ const Dashboard: React.FC = () => {
 
       // Hent salgsdata
       const sales = await salesOps.getAllSales();
-      const recentSales = sales.slice(0, 5); // Seneste 5 salg
+      
+      // Grupper salg efter fakturanummer
+      const groupedSales = sales.reduce((acc, sale) => {
+        if (!acc[sale.invoice_number]) {
+          acc[sale.invoice_number] = {
+            invoice_number: sale.invoice_number,
+            customer_name: sale.customer_name,
+            payment_status: sale.payment_status,
+            sale_date: sale.sale_date,
+            total_amount: 0
+          };
+        }
+        acc[sale.invoice_number].total_amount += sale.total_price;
+        return acc;
+      }, {} as Record<string, any>);
+
+      // Konverter til array og tag de seneste 5
+      const recentSales = Object.values(groupedSales)
+        .sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())
+        .slice(0, 5);
 
       // Beregn total omsætning og profit
       const totalRevenue = sales.reduce((sum, sale) => sum + sale.total_price, 0);
@@ -375,10 +394,10 @@ const Dashboard: React.FC = () => {
             </Thead>
             <Tbody>
               {stats.recentSales.map((sale) => (
-                <Tr key={sale.id}>
+                <Tr key={sale.invoice_number}>
                   <Td>{sale.invoice_number}</Td>
                   <Td>{sale.customer_name || 'N/A'}</Td>
-                  <Td isNumeric>{currency} {sale.total_price.toFixed(2)}</Td>
+                  <Td isNumeric>{currency} {sale.total_amount.toFixed(2)}</Td>
                   <Td>
                     <Badge
                       colorScheme={
@@ -387,7 +406,7 @@ const Dashboard: React.FC = () => {
                         'red'
                       }
                     >
-                      {sale.payment_status}
+                      {sale.payment_status.toUpperCase()}
                     </Badge>
                   </Td>
                 </Tr>
