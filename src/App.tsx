@@ -95,7 +95,7 @@ const AppContent: React.FC = () => {
       // Tjek version og opdater licens hvis nødvendigt
       const wasUpdated = await licenseOps.checkAndUpdateVersion(version);
       
-      if (wasUpdated) {
+      if (wasUpdated === true) {
         toast({
           title: 'License Extended',
           description: 'Your license has been extended by 30 days due to this update.',
