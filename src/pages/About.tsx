@@ -3,7 +3,8 @@ import {
   Box, VStack, Heading, Text, Link, Divider, 
   SimpleGrid, Icon, Flex, Button,
   Modal, ModalOverlay, ModalContent, ModalHeader,
-  ModalFooter, ModalBody, ModalCloseButton
+  ModalFooter, ModalBody, ModalCloseButton,
+  useToast
 } from '@chakra-ui/react';
 import {
   CubeIcon, CircleStackIcon, UserGroupIcon, ChartBarIcon,
@@ -37,6 +38,7 @@ const FeatureBox: React.FC<{
 
 const About: React.FC = () => {
   const [selectedGuide, setSelectedGuide] = useState<number | null>(null);
+  const toast = useToast();
 
   const guideDetails = [
     {
@@ -331,10 +333,29 @@ const About: React.FC = () => {
               isExternal
               colorScheme="blue"
               size="lg"
-              mb={6}
+              mb={2}
             >
               Join Discord Community
             </Button>
+            <Text 
+              fontSize="sm" 
+              color="gray.500" 
+              mb={6}
+              cursor="pointer"
+              onClick={() => {
+                navigator.clipboard.writeText("https://discord.gg/utXE9ER5yK");
+                toast({
+                  title: "Link copied",
+                  description: "Discord link copied to clipboard",
+                  status: "success",
+                  duration: 2000,
+                  isClosable: true,
+                });
+              }}
+              _hover={{ textDecoration: 'underline' }}
+            >
+              @https://discord.gg/utXE9ER5yK
+            </Text>
             <Text fontSize="sm">
               Version 0.2.8 | © 2024 PrintStream. All rights reserved.
             </Text>
