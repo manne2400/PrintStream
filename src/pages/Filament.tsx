@@ -20,7 +20,10 @@ import { CustomMaterialType, CustomMaterialTypeOperations } from '../database/op
 
 const FilamentTypes = [
   'PLA', 'PLA+', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'Nylon', 'HIPS', 'PVA', 
-  'Resin (Standard)', 'Resin (Tough)', 'Resin (Flexible)', 'Resin (Casting)', 'Resin (Water-Washable)'
+  'Resin (Standard)', 'Resin (Tough)', 'Resin (Flexible)', 'Resin (Casting)', 'Resin (Water-Washable)', 'Resin (High-Temperature)',
+  'Resin (Dental)', 'Resin (Durable)', 'Resin (Transparent)', 'Resin (ABS-Like)', 'Resin (Ceramic-Filled)', 'Resin (Bio-Compatible)',
+  'Resin (Impact-Resistant)', 'Resin (High-Detail)', 'Resin (Color Pigmented)', 'Resin (Fire-Resistant)', 'Resin (Elastic)',
+  'Resin (Bio-Based)', 'Resin (Conductive)', 'Resin (Magnetic)'
 ];
 
 interface FilamentFormData {
@@ -986,7 +989,22 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
       'Resin (Tough)',
       'Resin (Flexible)',
       'Resin (Casting)',
-      'Resin (Water-Washable)'
+      'Resin (Water-Washable)',
+      'Resin (High-Temperature)',
+      'Resin (Dental)',
+      'Resin (Durable)',
+      'Resin (Transparent)',
+      'Resin (ABS-Like)',
+      'Resin (Ceramic-Filled)',
+      'Resin (Bio-Compatible)',
+      'Resin (Impact-Resistant)',
+      'Resin (High-Detail)',
+      'Resin (Color Pigmented)',
+      'Resin (Fire-Resistant)',
+      'Resin (Elastic)',
+      'Resin (Bio-Based)',
+      'Resin (Conductive)',
+      'Resin (Magnetic)'
     ];
     
     if (predefinedResinTypes.includes(type)) {
