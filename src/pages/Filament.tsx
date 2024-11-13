@@ -8,9 +8,10 @@ import {
   NumberIncrementStepper, NumberDecrementStepper,
   useDisclosure, VStack, Switch,
   Table, Thead, Tbody, Tr, Th, Td,
-  useToast, Editable, EditableInput, EditablePreview, useEditableControls, IconButton, InputGroup, InputLeftElement
+  useToast, Editable, EditableInput, EditablePreview, useEditableControls, IconButton, InputGroup, InputLeftElement,
+  Grid
 } from '@chakra-ui/react';
-import { PlusIcon, PencilIcon, DocumentDuplicateIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, DocumentDuplicateIcon, TrashIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, ArrowPathIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
 import { FilamentOperations, Filament as FilamentType } from '../database/operations';
 import { useNotifications } from '../context/NotificationContext';
@@ -539,6 +540,85 @@ const AddStockModal: React.FC<AddStockModalProps> = ({ isOpen, onClose, filament
   );
 };
 
+// Tilføj InfoModal komponent
+interface InfoModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  filament: FilamentType;
+}
+
+const FilamentInfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, filament }) => {
+  const { currency } = useCurrency();
+  
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Filament Information</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack spacing={4} align="stretch">
+            <Box>
+              <Text fontWeight="bold" mb={2}>Basic Information</Text>
+              <Grid templateColumns="1fr 1fr" gap={4}>
+                <Text>Name:</Text>
+                <Text>{filament.name}</Text>
+                <Text>Type:</Text>
+                <Text>{filament.type}</Text>
+                <Text>Color:</Text>
+                <Text>{filament.color}</Text>
+                <Text>Price per kg:</Text>
+                <Text>{currency} {filament.price.toFixed(2)}</Text>
+                <Text>Roll Weight:</Text>
+                <Text>{filament.weight}g</Text>
+                <Text>Current Stock:</Text>
+                <Text>{filament.stock}g</Text>
+                <Text>Low Stock Alert:</Text>
+                <Text>{filament.low_stock_alert}g</Text>
+                {filament.ams_slot !== null && (
+                  <>
+                    <Text>AMS Slot:</Text>
+                    <Text>{filament.ams_slot}</Text>
+                  </>
+                )}
+              </Grid>
+            </Box>
+
+            {filament.is_resin && (
+              <Box>
+                <Text fontWeight="bold" mb={2}>Resin Settings</Text>
+                <Grid templateColumns="1fr 1fr" gap={4}>
+                  <Text>Normal Exposure:</Text>
+                  <Text>{filament.resin_exposure} seconds</Text>
+                  <Text>Bottom Exposure:</Text>
+                  <Text>{filament.resin_bottom_exposure} seconds</Text>
+                  <Text>Lift Distance:</Text>
+                  <Text>{filament.resin_lift_distance} mm</Text>
+                  <Text>Lift Speed:</Text>
+                  <Text>{filament.resin_lift_speed} mm/min</Text>
+                </Grid>
+              </Box>
+            )}
+
+            <Box>
+              <Text fontWeight="bold" mb={2}>Additional Information</Text>
+              <Grid templateColumns="1fr 1fr" gap={4}>
+                <Text>Created At:</Text>
+                <Text>{new Date(filament.created_at!).toLocaleString()}</Text>
+                <Text>Material Type:</Text>
+                <Text>{filament.is_resin ? 'Resin' : 'Filament'}</Text>
+              </Grid>
+            </Box>
+          </VStack>
+        </ModalBody>
+        <ModalFooter>
+          <Button onClick={onClose}>Close</Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilaments }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -569,6 +649,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   const [addStockModalData, setAddStockModalData] = useState<FilamentType | null>(null);
   const { currency } = useCurrency();
   const [rolls, setRolls] = useState<number>(1);
+  const [infoModalData, setInfoModalData] = useState<FilamentType | null>(null);
 
   useEffect(() => {
     loadFilaments();
@@ -939,17 +1020,17 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               </Th>
               <Th isNumeric cursor="pointer" onClick={() => handleSort('weight')}>
                 <Flex align="center" justify="flex-end">
-                  Roll Weight (g) {renderSortIcon('weight')}
+                  Roll Weight (g/mL) {renderSortIcon('weight')}
                 </Flex>
               </Th>
               <Th isNumeric cursor="pointer" onClick={() => handleSort('stock')}>
                 <Flex align="center" justify="flex-end">
-                  Stock (g) {renderSortIcon('stock')}
+                  Stock (g/mL) {renderSortIcon('stock')}
                 </Flex>
               </Th>
               <Th isNumeric cursor="pointer" onClick={() => handleSort('low_stock_alert')}>
                 <Flex align="center" justify="flex-end">
-                  Alert at (g) {renderSortIcon('low_stock_alert')}
+                  Alert at (g/mL) {renderSortIcon('low_stock_alert')}
                 </Flex>
               </Th>
               <Th cursor="pointer" onClick={() => handleSort('ams_slot')}>
@@ -984,31 +1065,40 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                   </Editable>
                 </Td>
                 <Td isNumeric>
-                  <Editable
-                    defaultValue={filament.weight.toString()}
-                    onSubmit={(value) => handleUpdate(filament.id!, { weight: parseInt(value) })}
-                  >
-                    <EditablePreview />
-                    <EditableInput type="number" min="0" />
-                  </Editable>
+                  <Flex justify="flex-end" align="center">
+                    <Editable
+                      defaultValue={filament.weight.toString()}
+                      onSubmit={(value) => handleUpdate(filament.id!, { weight: parseInt(value) })}
+                    >
+                      <EditablePreview />
+                      <EditableInput type="number" min="0" />
+                    </Editable>
+                    <Text ml={1}>{filament.is_resin ? 'mL' : 'g'}</Text>
+                  </Flex>
                 </Td>
                 <Td isNumeric>
-                  <Editable
-                    defaultValue={filament.stock.toString()}
-                    onSubmit={(value) => handleUpdate(filament.id!, { stock: parseInt(value) })}
-                  >
-                    <EditablePreview />
-                    <EditableInput type="number" />
-                  </Editable>
+                  <Flex justify="flex-end" align="center">
+                    <Editable
+                      defaultValue={filament.stock.toString()}
+                      onSubmit={(value) => handleUpdate(filament.id!, { stock: parseInt(value) })}
+                    >
+                      <EditablePreview />
+                      <EditableInput type="number" />
+                    </Editable>
+                    <Text ml={1}>{filament.is_resin ? 'mL' : 'g'}</Text>
+                  </Flex>
                 </Td>
                 <Td isNumeric>
-                  <Editable
-                    defaultValue={filament.low_stock_alert?.toString() ?? "500"}
-                    onSubmit={(value) => handleUpdate(filament.id!, { low_stock_alert: parseInt(value) })}
-                  >
-                    <EditablePreview />
-                    <EditableInput type="number" min="0" />
-                  </Editable>
+                  <Flex justify="flex-end" align="center">
+                    <Editable
+                      defaultValue={filament.low_stock_alert?.toString() ?? "500"}
+                      onSubmit={(value) => handleUpdate(filament.id!, { low_stock_alert: parseInt(value) })}
+                    >
+                      <EditablePreview />
+                      <EditableInput type="number" min="0" />
+                    </Editable>
+                    <Text ml={1}>{filament.is_resin ? 'mL' : 'g'}</Text>
+                  </Flex>
                 </Td>
                 <Td>
                   <AmsSlotCell 
@@ -1019,6 +1109,14 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                 </Td>
                 <Td>
                   <Flex gap={2}>
+                    <IconButton
+                      aria-label="View filament info"
+                      icon={<Icon as={InformationCircleIcon} />}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="blue"
+                      onClick={() => setInfoModalData(filament)}
+                    />
                     <IconButton
                       aria-label="Add stock"
                       icon={<Icon as={PlusIcon} />}
@@ -1361,6 +1459,14 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
             await handleUpdate(id, { stock: newStock });
             await loadFilaments();
           }}
+        />
+      )}
+
+      {infoModalData && (
+        <FilamentInfoModal
+          isOpen={infoModalData !== null}
+          onClose={() => setInfoModalData(null)}
+          filament={infoModalData}
         />
       )}
     </Box>

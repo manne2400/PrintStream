@@ -191,7 +191,8 @@ const Reports: React.FC = () => {
         type: f.type,
         color: f.color,
         usage: filamentUsageMap.get(f.id!) || 0,
-        stock: f.stock
+        stock: f.stock,
+        is_resin: f.is_resin
       })).sort((a, b) => b.usage - a.usage).slice(0, 5);
 
       setInventoryStats({
@@ -364,7 +365,7 @@ const Reports: React.FC = () => {
                 <Td>{filament.name}</Td>
                 <Td>{filament.type}</Td>
                 <Td>{filament.color}</Td>
-                <Td isNumeric>{filament.usage.toFixed(1)}g</Td>
+                <Td isNumeric>{filament.usage.toFixed(1)}{filament.is_resin ? ' mL' : ' g'}</Td>
                 <Td>
                   <Progress 
                     value={(filament.stock / 1000) * 100} 
