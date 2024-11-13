@@ -176,6 +176,19 @@ const initializeDatabase = async (): Promise<Database> => {
     }
   }
 
+  // Tilføj dark_mode kolonne hvis den ikke findes
+  try {
+    await exec(`
+      ALTER TABLE settings 
+      ADD COLUMN dark_mode BOOLEAN DEFAULT 1;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
+
   // Indsæt standard indstillinger hvis tabellen er tom
   const settingsCount = await get('SELECT COUNT(*) as count FROM settings');
   if (settingsCount.count === 0) {

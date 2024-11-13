@@ -47,7 +47,7 @@ const About: React.FC = () => {
         <VStack align="start" spacing={4}>
           <Text fontWeight="bold">Detailed Guide for Setting Up Inventory:</Text>
           <VStack align="start" pl={4} spacing={2}>
-            <Text>1. Navigate to the Filaments page</Text>
+            <Text>1. Navigate to the Filament & Resin page</Text>
             <Text>2. Click "Add New Material" button</Text>
             <Text>3. Fill in the material details:</Text>
             <VStack align="start" pl={8} spacing={1}>
