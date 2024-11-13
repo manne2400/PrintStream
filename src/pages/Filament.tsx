@@ -1317,30 +1317,28 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
 
               <FormControl isRequired>
                 <FormLabel>Price per kg ({currency})</FormLabel>
-                <Editable
-                  placeholder="0,00"
-                  defaultValue={formData.pricePerKg.toFixed(2).replace('.', ',')}
-                  onChange={(value) => {
-                    const cleanValue = value.replace(/[^\d,.]/g, '').replace(/,/g, '.');
-                    const parts = cleanValue.split('.');
-                    const finalValue = parts.length > 1 
-                      ? `${parts[0]}.${parts[1].slice(0, 2)}`
-                      : cleanValue;
-                    
-                    const numericValue = parseFloat(finalValue);
-                    if (!isNaN(numericValue)) {
-                      handleInputChange('pricePerKg', numericValue);
+                <NumberInput
+                  value={formData.pricePerKg}
+                  onChange={(valueString) => {
+                    const value = parseFloat(valueString);
+                    if (!isNaN(value)) {
+                      handleInputChange('pricePerKg', value);
                     }
                   }}
-                  startWithEditView
+                  min={0}
+                  precision={2}
+                  step={0.1}
                 >
-                  <EditablePreview />
-                  <EditableInput />
-                </Editable>
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Weight per Roll ({formData.isResin ? 'mL' : 'g'})</FormLabel>
+                <FormLabel>Material Volume/Weight ({formData.isResin ? 'mL' : 'g'})</FormLabel>
                 <NumberInput
                   value={formData.weight}
                   onChange={(value) => setFormData(prev => ({ ...prev, weight: parseInt(value) }))}
@@ -1356,7 +1354,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
               </FormControl>
 
               <FormControl isRequired>
-                <FormLabel>Number of Rolls</FormLabel>
+                <FormLabel>Number of Units</FormLabel>
                 <NumberInput
                   value={rolls}
                   onChange={(value) => setRolls(parseInt(value))}
@@ -1602,7 +1600,7 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
             {/* Form til at tilføje ny type */}
             <VStack spacing={4} mb={6}>
               <FormControl isRequired>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Type Name</FormLabel>
                 <Input
                   value={newCustomType.name}
                   onChange={(e) => setNewCustomType(prev => ({ ...prev, name: e.target.value }))}

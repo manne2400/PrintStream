@@ -1,7 +1,7 @@
 {
   "name": "printstream",
   "productName": "PrintStream",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "description": "3D Print Management System",
   "main": "build/electron.js",
   "scripts": {
