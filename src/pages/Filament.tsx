@@ -17,7 +17,8 @@ import { useNotifications } from '../context/NotificationContext';
 import { useCurrency } from '../context/CurrencyContext';
 
 const FilamentTypes = [
-  'PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'Nylon', 'HIPS', 'PVA', 'Other'
+  'PLA', 'PETG', 'ABS', 'TPU', 'ASA', 'PC', 'Nylon', 'HIPS', 'PVA', 
+  'Resin (Standard)', 'Resin (Tough)', 'Resin (Flexible)', 'Resin (Casting)', 'Other'
 ];
 
 interface FilamentFormData {
@@ -29,6 +30,13 @@ interface FilamentFormData {
   useAms: boolean;
   amsSlot: number | null;
   lowStockAlert: number;
+  isResin: boolean;
+  resinSettings?: {
+    exposure: number;
+    bottomExposure: number;
+    liftDistance: number;
+    liftSpeed: number;
+  };
 }
 
 interface AmsSlotCellProps {
@@ -104,6 +112,8 @@ const CopyFilamentModal: React.FC<CopyModalProps> = ({ isOpen, onClose, filament
     useAms: filamentData.ams_slot !== null,
     amsSlot: filamentData.ams_slot,
     lowStockAlert: 500,
+    isResin: filamentData.is_resin,
+    resinSettings: filamentData.resin_settings,
   });
 
   const handleSubmit = () => {
@@ -116,6 +126,8 @@ const CopyFilamentModal: React.FC<CopyModalProps> = ({ isOpen, onClose, filament
       stock: copyData.weight,
       ams_slot: copyData.useAms ? copyData.amsSlot : null,
       low_stock_alert: copyData.lowStockAlert,
+      is_resin: copyData.isResin,
+      resin_settings: copyData.resinSettings,
     });
     onClose();
   };
@@ -297,6 +309,8 @@ const EditFilamentModal: React.FC<EditModalProps> = ({ isOpen, onClose, filament
     useAms: filamentData.ams_slot !== null,
     amsSlot: filamentData.ams_slot ?? null,
     lowStockAlert: filamentData.low_stock_alert ?? 500,
+    isResin: filamentData.is_resin,
+    resinSettings: filamentData.resin_settings,
   });
 
   const handleSubmit = () => {
@@ -307,6 +321,8 @@ const EditFilamentModal: React.FC<EditModalProps> = ({ isOpen, onClose, filament
       price: editData.pricePerKg,
       ams_slot: editData.useAms ? editData.amsSlot : null,
       low_stock_alert: editData.lowStockAlert,
+      is_resin: editData.isResin,
+      resin_settings: editData.resinSettings,
     });
     onClose();
   };
@@ -536,6 +552,13 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
     useAms: false,
     amsSlot: null,
     lowStockAlert: 500,
+    isResin: false,
+    resinSettings: {
+      exposure: 2.5,
+      bottomExposure: 30,
+      liftDistance: 5,
+      liftSpeed: 180
+    }
   });
   const [copyModalData, setCopyModalData] = useState<FilamentType | null>(null);
   const [deleteFilament, setDeleteFilament] = useState<FilamentType | null>(null);
@@ -595,7 +618,21 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   };
 
   const handleInputChange = (field: keyof FilamentFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Hvis type ændres, opdater isResin
+      if (field === 'type') {
+        newData.isResin = isResinType(value);
+        // Nulstil AMS hvis det er resin
+        if (newData.isResin) {
+          newData.useAms = false;
+          newData.amsSlot = null;
+        }
+      }
+      
+      return newData;
+    });
   };
 
   const handleAmsToggle = (checked: boolean) => {
@@ -620,6 +657,11 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         stock: formData.weight * rolls,
         ams_slot: formData.useAms ? formData.amsSlot : null,
         low_stock_alert: formData.lowStockAlert,
+        is_resin: formData.isResin,
+        resin_exposure: formData.resinSettings?.exposure,
+        resin_bottom_exposure: formData.resinSettings?.bottomExposure,
+        resin_lift_distance: formData.resinSettings?.liftDistance,
+        resin_lift_speed: formData.resinSettings?.liftSpeed
       });
 
       await loadFilaments(); // Genindlæs data
@@ -642,6 +684,13 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
         useAms: false,
         amsSlot: null,
         lowStockAlert: 500,
+        isResin: false,
+        resinSettings: {
+          exposure: 2.5,
+          bottomExposure: 30,
+          liftDistance: 5,
+          liftSpeed: 180
+        }
       });
     } catch (err) {
       console.error('Failed to add filament:', err);
@@ -820,6 +869,9 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
   const handleAddStock = (filament: FilamentType) => {
     setAddStockModalData(filament);
   };
+
+  // Tilføj helper funktion til at tjekke om det er resin
+  const isResinType = (type: string) => type.toLowerCase().includes('resin');
 
   return (
     <Box p={4}>
@@ -1101,19 +1153,108 @@ const Filament: React.FC<FilamentProps> = ({ checkedFilaments, setCheckedFilamen
                 </Text>
               </FormControl>
 
-              <FormControl display="flex" alignItems="center">
-                <FormLabel mb="0">Use AMS</FormLabel>
-                <Switch
-                  isChecked={formData.useAms}
-                  onChange={(e) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      useAms: e.target.checked,
-                      amsSlot: e.target.checked ? prev.amsSlot || 1 : null
-                    }));
-                  }}
-                />
-              </FormControl>
+              {/* Vis resin indstillinger hvis det er en resin type */}
+              {formData.isResin && (
+                <Box width="100%" p={4} borderWidth={1} borderRadius="md">
+                  <Heading size="sm" mb={4}>Resin Settings</Heading>
+                  <VStack spacing={3}>
+                    <FormControl>
+                      <FormLabel>Normal Exposure (seconds)</FormLabel>
+                      <NumberInput
+                        value={formData.resinSettings?.exposure}
+                        onChange={(value) => setFormData(prev => ({
+                          ...prev,
+                          resinSettings: {
+                            ...prev.resinSettings!,
+                            exposure: parseFloat(value)
+                          }
+                        }))}
+                        step={0.1}
+                        precision={1}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Bottom Exposure (seconds)</FormLabel>
+                      <NumberInput
+                        value={formData.resinSettings?.bottomExposure}
+                        onChange={(value) => setFormData(prev => ({
+                          ...prev,
+                          resinSettings: {
+                            ...prev.resinSettings!,
+                            bottomExposure: parseFloat(value)
+                          }
+                        }))}
+                        precision={1}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Lift Distance (mm)</FormLabel>
+                      <NumberInput
+                        value={formData.resinSettings?.liftDistance}
+                        onChange={(value) => setFormData(prev => ({
+                          ...prev,
+                          resinSettings: {
+                            ...prev.resinSettings!,
+                            liftDistance: parseFloat(value)
+                          }
+                        }))}
+                        precision={1}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Lift Speed (mm/min)</FormLabel>
+                      <NumberInput
+                        value={formData.resinSettings?.liftSpeed}
+                        onChange={(value) => setFormData(prev => ({
+                          ...prev,
+                          resinSettings: {
+                            ...prev.resinSettings!,
+                            liftSpeed: parseFloat(value)
+                          }
+                        }))}
+                      >
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    </FormControl>
+                  </VStack>
+                </Box>
+              )}
+
+              {/* Skjul AMS muligheden for resin */}
+              {!formData.isResin && (
+                <FormControl display="flex" alignItems="center">
+                  <FormLabel mb="0">Use AMS</FormLabel>
+                  <Switch
+                    isChecked={formData.useAms}
+                    onChange={(e) => handleAmsToggle(e.target.checked)}
+                  />
+                </FormControl>
+              )}
 
               {formData.useAms && (
                 <FormControl isRequired>

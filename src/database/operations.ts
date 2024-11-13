@@ -12,6 +12,11 @@ export interface Filament {
   ams_slot?: number | null
   created_at?: string
   low_stock_alert?: number
+  is_resin?: boolean
+  resin_exposure?: number
+  resin_bottom_exposure?: number
+  resin_lift_distance?: number
+  resin_lift_speed?: number
 }
 
 export interface Project {
@@ -118,8 +123,13 @@ export class FilamentOperations {
       return Number(price.toFixed(2));
     };
 
+    const isResin = filament.type.toLowerCase().includes('resin');
+
     const result = await this.db.run(
-      'INSERT INTO filaments (name, type, color, weight, price, stock, ams_slot, low_stock_alert) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      `INSERT INTO filaments (
+        name, type, color, weight, price, stock, ams_slot, low_stock_alert,
+        is_resin, resin_exposure, resin_bottom_exposure, resin_lift_distance, resin_lift_speed
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         filament.name, 
         filament.type, 
@@ -128,7 +138,12 @@ export class FilamentOperations {
         normalizePrice(filament.price),
         filament.stock, 
         filament.ams_slot,
-        filament.low_stock_alert ?? 500
+        filament.low_stock_alert ?? 500,
+        isResin ? 1 : 0,
+        filament.resin_exposure,
+        filament.resin_bottom_exposure,
+        filament.resin_lift_distance,
+        filament.resin_lift_speed
       ]
     );
     return result.lastID;

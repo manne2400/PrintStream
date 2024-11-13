@@ -370,6 +370,35 @@ const initializeDatabase = async (): Promise<Database> => {
     });
   }
 
+  // Tilføj resin settings kolonner hvis de ikke findes
+  try {
+    await exec(`
+      ALTER TABLE filaments 
+      ADD COLUMN is_resin BOOLEAN DEFAULT 0;
+    `);
+    await exec(`
+      ALTER TABLE filaments 
+      ADD COLUMN resin_exposure REAL;
+    `);
+    await exec(`
+      ALTER TABLE filaments 
+      ADD COLUMN resin_bottom_exposure REAL;
+    `);
+    await exec(`
+      ALTER TABLE filaments 
+      ADD COLUMN resin_lift_distance REAL;
+    `);
+    await exec(`
+      ALTER TABLE filaments 
+      ADD COLUMN resin_lift_speed REAL;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
+
   return { run, get, all, exec }
 }
 
