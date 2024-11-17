@@ -80,13 +80,21 @@ export const validateLicenseKey = (key: string): {
 
 // Hjælpefunktioner
 const hashString = (str: string): string => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash).toString(16).padStart(8, '0');
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    let h1 = 0xdeadbeef;
+    let h2 = 0x41c6ce57;
+    
+    for (let i = 0; i < data.length; i++) {
+        const byte = data[i];
+        h1 = Math.imul(h1 ^ byte, 2654435761);
+        h2 = Math.imul(h2 ^ byte, 1597334677);
+    }
+    
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    
+    return (h1 >>> 0).toString(16).slice(-8).padStart(8, '0');
 };
 
 const encodeDays = (days: number): string => {

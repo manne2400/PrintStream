@@ -361,65 +361,76 @@ npm run dist
 ## Sådan Genereres PrintStream Licensnøgler
 
 ## Licensnøgle Format
-Formatet for en licensnøgle er: `XXXX-YYYY-ZZZZ-WWWW`
+Formatet for en licensnøgle er: `XXXX-YYYYYYYY-ZZZZ-WWWW`
 
 Hvor:
 - `XXXX` = Hash af kundeID (4 tegn)
-- `YYYY` = Krypteret antal dage (op til 8 tegn)
+- `YYYYYYYY` = Krypteret antal dage (8 tegn)
 - `ZZZZ-WWWW` = Validerings checksum (8 tegn total)
 
-## Generering af Dele
-
-### 1. Kunde Hash (XXXX)
-- Input: KundeID (string)
-- Process:
-  1. Konverter hver karakter til ASCII værdi
-  2. Brug rolling hash algoritme: `hash = ((hash << 5) - hash) + char`
-  3. Tag absolut værdi og konverter til hex
-  4. Tag de første 4 tegn
-- Output: 4 tegn hex string
-
-### 2. Dage Kryptering (YYYY)
-- Input: Antal dage (1-3650)
-- Process:
-  1. Multiplicer dage med 7919 (primtal)
-  2. Konverter til hex
-  3. Pad med nuller til 8 tegn
-- Output: Op til 8 tegn hex string
-
-### 3. Checksum (ZZZZ-WWWW)
-- Input: KundeHash + KrypteretDage
-- Process:
-  1. Konkatenér input med "PrintStream-Secret-Key"
-  2. Brug samme hash algoritme som for kundeID
-  3. Tag de første 8 tegn af resultatet
-- Output: 8 tegn hex string (delt i 4-4)
-
-## Validering
-Ved validering tjekkes:
-1. Korrekt format (4 dele adskilt af bindestreger)
-2. Hver del er valid hex
-3. Checksum matcher
-4. Dekrypteret antal dage er mellem 1-3650
-
-## Begrænsninger
-- Maksimum 10 års licens (3650 dage)
-- Licensnøgler er case-insensitive
-- Mellemrum trimmes automatisk
-
-## Eksempel på Brug
-```python
-# Pseudokode for licensgenerering
-def generate_license(customer_id: str, days: int) -> str:
-    if not (1 <= days <= 3650):
-        raise ValueError("Days must be between 1 and 3650")
-        
-    customer_hash = hash_customer_id(customer_id)[:4]
-    days_encoded = encode_days(days)
-    checksum = generate_checksum(customer_hash + days_encoded)
+## Hash Algoritme
+Systemet bruger en MurmurHash3-lignende algoritme:
+```typescript
+const hashString = (str: string): string => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(str);
+    let h1 = 0xdeadbeef;
+    let h2 = 0x41c6ce57;
     
-    return f"{customer_hash}-{days_encoded}-{checksum[:4]}-{checksum[4:]}"
+    for (let i = 0; i < data.length; i++) {
+        const byte = data[i];
+        h1 = Math.imul(h1 ^ byte, 2654435761);
+        h2 = Math.imul(h2 ^ byte, 1597334677);
+    }
+    
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    
+    return (h1 >>> 0).toString(16).slice(-8).padStart(8, '0');
+};
 ```
+
+### Nøglekomponenter
+
+1. **Kunde Hash (XXXX)**
+   - Genereres fra kundeID ved hjælp af MurmurHash3
+   - Case-sensitiv (forskellige resultater for "ABC" og "abc")
+   - Altid 4 tegn hex
+
+2. **Dage Kryptering (YYYYYYYY)**
+   - Input: Antal dage (1-3650)
+   - Krypteres ved multiplikation med primtallet 7919
+   - Konverteres til hex med 8 tegn padding
+
+3. **Checksum (ZZZZ-WWWW)**
+   - Genereres fra kundeHash + krypterede dage
+   - Inkluderer hemmelig nøgle for sikkerhed
+   - Altid 8 tegn total (4-4 format)
+
+### Sikkerhedsfeatures
+- Unicode-sikker gennem TextEncoder
+- Kollisionsresistent hash-funktion
+- Case-sensitiv validering
+- Konsistent nøglelængde
+- Offline validering mulig
+
+### Begrænsninger
+- Maksimum 10 års licens (3650 dage)
+- Licensnøgler kan ikke genbruges
+- Installation-specifik tracking
+
+### Særlige Funktioner
+1. **Versionshåndtering**
+   - Prøvelicenser nulstilles ved ny version
+   - Automatisk forlængelse af udløbende licenser
+
+2. **Installations Tracking**
+   - Unikt installations-id pr. system
+   - Forhindrer uautoriseret genbrug
+
+3. **Offline Validering**
+   - Komplet offline validering mulig
+   - Ingen internetforbindelse påkrævet
 
 ## Sikkerhedsovervejelser
 - Primtallet 7919 bruges som krypteringsnøgle for dage
@@ -437,3 +448,23 @@ def generate_license(customer_id: str, days: int) -> str:
 - Ved ny version af softwaren:
   - Prøvelicenser nulstilles til 30 dage
   - Fulde licenser med mindre end 30 dage tilbage forlænges
+
+Præcist Format:
+Nøjagtig struktur (XXXX-YYYYYYYY-ZZZZ-WWWW)
+Længde og format for hver del
+Komplet Hash Algoritme:
+Fuld kildekode for MurmurHash3-implementationen
+Alle konstanter og matematiske operationer
+Præcis håndtering af Unicode gennem TextEncoder
+Kryptering af Dage:
+Det specifikke primtal (7919)
+Padding-detaljer (8 tegn)
+Konvertering til hex
+Validering:
+Checksum generering
+Brug af hemmelig nøgle
+Format validering
+Database Integration:
+Struktur for licenslagring
+Installations-ID håndtering
+Versionshåndtering

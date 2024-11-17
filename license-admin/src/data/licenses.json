@@ -10,5 +10,119 @@
     "days": 30,
     "licenseKey": "0001-3a002-113d-9c65",
     "generatedAt": "2024-11-14T17:08:17.629Z"
+  },
+  {
+    "customerId": "KLE",
+    "days": 30,
+    "licenseKey": "0001-0003a002-3336-a2e9",
+    "generatedAt": "2024-11-17T07:52:49.707Z"
+  },
+  {
+    "customerId": "FLP",
+    "days": 30,
+    "licenseKey": "0001-0003a002-3336-a2e9",
+    "generatedAt": "2024-11-17T07:52:56.140Z"
+  },
+  {
+    "customerId": "JCM",
+    "days": 30,
+    "licenseKey": "0b87-0003a002-7ff1-affe",
+    "generatedAt": "2024-11-17T07:57:33.765Z"
+  },
+  {
+    "customerId": "PKM",
+    "days": 30,
+    "licenseKey": "0b88-0003a002-4cb6-7fbf",
+    "generatedAt": "2024-11-17T07:57:41.335Z"
+  },
+  {
+    "customerId": "jcm",
+    "days": 30,
+    "licenseKey": "0b88-0003a002-4cb6-7fbf",
+    "generatedAt": "2024-11-17T07:58:01.449Z"
+  },
+  {
+    "customerId": "pkm",
+    "days": 30,
+    "licenseKey": "0b88-0003a002-4cb6-7fbf",
+    "generatedAt": "2024-11-17T07:59:13.708Z"
+  },
+  {
+    "customerId": "lol",
+    "days": 30,
+    "licenseKey": "0b88-0003a002-4cb6-7fbf",
+    "generatedAt": "2024-11-17T07:59:19.728Z"
+  },
+  {
+    "customerId": "fdsfdsfs",
+    "days": 30,
+    "licenseKey": "c35d-0003a002-56ce-73ac",
+    "generatedAt": "2024-11-17T07:59:24.782Z"
+  },
+  {
+    "customerId": "JCM",
+    "days": 30,
+    "licenseKey": "0b94-0003a002-4597-",
+    "generatedAt": "2024-11-17T08:01:13.633Z"
+  },
+  {
+    "customerId": "jcm",
+    "days": 30,
+    "licenseKey": "66be-0003a002-28a0-",
+    "generatedAt": "2024-11-17T08:01:21.996Z"
+  },
+  {
+    "customerId": "PKM",
+    "days": 30,
+    "licenseKey": "0847-0003a002-1d8a-",
+    "generatedAt": "2024-11-17T08:01:28.901Z"
+  },
+  {
+    "customerId": "pkm",
+    "days": 30,
+    "licenseKey": "cb65-0003a002-61e8-",
+    "generatedAt": "2024-11-17T08:01:35.646Z"
+  },
+  {
+    "customerId": "JCM",
+    "days": 30,
+    "licenseKey": "0b94-0003a002-4597-",
+    "generatedAt": "2024-11-17T08:08:56.237Z"
+  },
+  {
+    "customerId": "jcm",
+    "days": 30,
+    "licenseKey": "66be-0003a002-28a0-",
+    "generatedAt": "2024-11-17T08:08:59.603Z"
+  },
+  {
+    "customerId": "JCM",
+    "days": 30,
+    "licenseKey": "0b94-0003a002-4597-",
+    "generatedAt": "2024-11-17T08:13:23.500Z"
+  },
+  {
+    "customerId": "JCM",
+    "days": 30,
+    "licenseKey": "0b94-0003a002-4597-",
+    "generatedAt": "2024-11-17T08:13:38.466Z"
+  },
+  {
+    "customerId": "JCM",
+    "days": 30,
+    "licenseKey": "0b94-0003a002-4597-",
+    "generatedAt": "2024-11-17T08:14:30.146Z"
+  },
+  {
+    "customerId": "JCM",
+    "days": 30,
+    "licenseKey": "0b94-0003a002-4597-f4d3",
+    "generatedAt": "2024-11-17T08:15:39.935Z"
+  },
+  {
+    "customerId": "Jacob Manscher",
+    "days": 30,
+    "licenseKey": "dbc7-0003a002-4bf5-4f0a",
+    "generatedAt": "2024-11-17T08:16:19.617Z"
   }
 ]
