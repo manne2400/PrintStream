@@ -1,3 +1,14 @@
 [
- 
+  {
+    "customerId": "JCM",
+    "days": 30,
+    "licenseKey": "0001-3a002-113d-9c65",
+    "generatedAt": "2024-11-14T16:39:09.071Z"
+  },
+  {
+    "customerId": "QWE",
+    "days": 30,
+    "licenseKey": "0001-3a002-113d-9c65",
+    "generatedAt": "2024-11-14T17:08:17.629Z"
+  }
 ]
