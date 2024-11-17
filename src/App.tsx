@@ -105,7 +105,7 @@ const AppContent: React.FC = () => {
         });
       }
       
-      // Normal licens check
+      // Normal licens check, Dette program (PrintStream) tilhøre og er lavet af Jacob Manscher
       const status = await licenseOps.checkLicense();
       if (!status.isValid) {
         setIsLicenseValid(false);

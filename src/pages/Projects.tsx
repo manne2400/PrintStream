@@ -64,7 +64,7 @@ const FilamentsModal: React.FC<FilamentsModalProps> = ({ isOpen, onClose, projec
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Filaments for {projectName}</ModalHeader>
+        <ModalHeader>Materials for {projectName}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Table variant="simple">
@@ -718,7 +718,7 @@ const Projects: React.FC = () => {
                     colorScheme="blue"
                     onClick={() => handleViewFilaments(project)}
                   >
-                    View Filaments
+                    View Materials
                   </Button>
                 </Td>
                 <Td>

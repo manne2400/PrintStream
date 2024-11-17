@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.3.1] - 2024-11-17
+### Added
+- Invoice logo functionality
+  - Added logo upload in settings
+  - Implemented logo display on invoices
+  - Added logo preview in settings
+- Improved invoice design
+  - Enhanced layout and spacing
+  - Added professional color scheme
+  - Improved typography
+  - Added better section separation
+- English language support for invoices
+  - Converted all invoice text to English
+  - Updated labels and headers
+  - Standardized business terminology
+
+### Changed
+- Updated invoice template with better styling
+- Improved invoice preview modal
+- Enhanced company information display on invoices
+- Better handling of image loading in PDFs
+
+### Fixed
+- Fixed logo loading timing in PDF generation
+- Fixed image display issues in preview
+- Corrected alignment issues in invoice layout
+- Fixed VAT ID display on invoices
+
+### Technical
+- Added proper image handling in PDF generation
+- Improved async operations for PDF creation
+- Enhanced error handling for file operations
+- Updated database schema for logo storage
+
+
+
 ## [0.2.9] - 2024-11-11
 
 ### Added
