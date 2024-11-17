@@ -468,3 +468,68 @@ Database Integration:
 Struktur for licenslagring
 Installations-ID håndtering
 Versionshåndtering
+
+## Komplet Implementation
+
+### Licensgenerering
+```typescript
+export const generateLicenseKey = (days: number, customerId: string): string => {
+    if (days < 1 || days > 3650) {
+        throw new Error("Days must be between 1 and 3650");
+    }
+    
+    const customerHash = hashString(customerId).slice(0, 4);
+    const daysEncoded = encodeDays(days);
+    const checksum = generateChecksum(customerHash + daysEncoded);
+    
+    return `${customerHash}-${daysEncoded}-${checksum.slice(0, 4)}-${checksum.slice(4, 8)}`;
+};
+
+const encodeDays = (days: number): string => {
+    return (days * 7919).toString(16).padStart(8, '0');
+};
+
+const generateChecksum = (str: string): string => {
+    return hashString(str + 'PrintStream-Secret-Key');
+};
+```
+
+### Licensvalidering
+```typescript
+export const validateLicenseKey = (key: string): { isValid: boolean; days?: number } => {
+    try {
+        const parts = key.trim().toLowerCase().split('-');
+        if (parts.length !== 4) return { isValid: false };
+
+        const [customerHash, daysEncoded, checksum1, checksum2] = parts;
+        
+        // Validér formater
+        if (!customerHash.match(/^[0-9a-f]{4}$/) ||
+            !daysEncoded.match(/^[0-9a-f]{8}$/) ||
+            !checksum1.match(/^[0-9a-f]{4}$/) ||
+            !checksum2.match(/^[0-9a-f]{4}$/)) {
+            return { isValid: false };
+        }
+
+        // Validér checksum
+        const expectedChecksum = generateChecksum(customerHash + daysEncoded);
+        if (checksum1 + checksum2 !== expectedChecksum.slice(0, 8)) {
+            return { isValid: false };
+        }
+
+        // Dekrypter dage
+        const days = decodeDays(daysEncoded);
+        if (days <= 0 || days > 3650) {
+            return { isValid: false };
+        }
+
+        return { isValid: true, days };
+    } catch (err) {
+        return { isValid: false };
+    }
+};
+
+const decodeDays = (encoded: string): number => {
+    return Math.floor(parseInt(encoded, 16) / 7919);
+};
+```
