@@ -1,6 +1,7 @@
 import { Database } from './setup'
 import { validateLicenseKey } from '../utils/license';
 import { fetchNetworkTime } from '../utils/networkTime';
+import PDFDocument from 'pdfkit';
 
 export interface Filament {
   id?: number
@@ -64,6 +65,7 @@ export interface Settings {
   bank_details: string;
   vat_id: string;
   dark_mode: boolean;
+  invoice_logo_path?: string;
 }
 
 export interface PrintJob {
@@ -106,6 +108,15 @@ export interface CustomMaterialType {
   name: string;
   is_resin: boolean;
   created_at?: string;
+}
+
+export interface InvoicePreview {
+  invoice_number: string;
+  date: string;
+  customer_name: string | null;
+  total: number;
+  currency: string;
+  logo_path?: string;
 }
 
 export class FilamentOperations {
@@ -648,6 +659,189 @@ export class SalesOperations {
       'UPDATE sales SET payment_status = ? WHERE invoice_number = ?',
       [status, invoiceNumber]
     );
+  }
+
+  async getInvoicePreview(id: number): Promise<InvoicePreview> {
+    const sale = await this.getSaleById(id);
+    if (!sale) throw new Error('Sale not found');
+
+    const settingsOps = new SettingsOperations(this.db);
+    const settings = await settingsOps.getSettings();
+
+    // Tjek om logo eksisterer
+    let logoExists = false;
+    if (settings.invoice_logo_path) {
+      const fs = require('fs');
+      logoExists = fs.existsSync(settings.invoice_logo_path);
+    }
+
+    return {
+      invoice_number: sale.invoice_number,
+      date: sale.sale_date,
+      customer_name: sale.customer_name,
+      total: sale.total_price,
+      currency: sale.currency,
+      logo_path: logoExists ? settings.invoice_logo_path : undefined
+    };
+  }
+
+  async generateInvoice(sale: Sale): Promise<Buffer> {
+    try {
+      const settingsOps = new SettingsOperations(this.db);
+      const settings = await settingsOps.getSettings();
+      const fs = require('fs');
+      
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50,
+        info: {
+          Title: `Faktura ${sale.invoice_number}`,
+          Author: settings.company_name || 'PrintStream'
+        }
+      });
+
+      // Farver og styling
+      const primaryColor = '#2B6CB0';  // Blå
+      const secondaryColor = '#718096'; // Grå
+      
+      let yPos = 50;
+
+      // Logo sektion
+      if (settings.invoice_logo_path && fs.existsSync(settings.invoice_logo_path)) {
+        doc.image(settings.invoice_logo_path, 50, yPos, {
+          fit: [150, 80],
+          align: 'left'
+        });
+        yPos = 140;
+      }
+
+      // Faktura header
+      doc.font('Helvetica-Bold')
+         .fontSize(24)
+         .fillColor(primaryColor)
+         .text('FAKTURA', 50, yPos);
+
+      // Faktura detaljer
+      doc.fontSize(10)
+         .fillColor(secondaryColor)
+         .text(`Faktura #: ${sale.invoice_number}`, 50, yPos + 30)
+         .text(`Dato: ${new Date(sale.sale_date).toLocaleDateString()}`, 50, yPos + 45)
+         .text(`Forfaldsdato: ${new Date(sale.payment_due_date).toLocaleDateString()}`, 50, yPos + 60);
+
+      // Firma information (højre side)
+      doc.font('Helvetica-Bold')
+         .fillColor(primaryColor)
+         .text(settings.company_name || '', 300, yPos)
+         .font('Helvetica')
+         .fillColor(secondaryColor)
+         .text(settings.company_address || '', 300, yPos + 20)
+         .text(`Tlf: ${settings.company_phone || ''}`, 300, yPos + 35)
+         .text(`Email: ${settings.company_email || ''}`, 300, yPos + 50)
+         .text(`CVR: ${settings.vat_id || ''}`, 300, yPos + 65);
+
+      yPos += 120;
+
+      // Kunde information
+      if (sale.customer_name) {
+        doc.font('Helvetica-Bold')
+           .fillColor(primaryColor)
+           .text('FAKTURERES TIL:', 50, yPos)
+           .font('Helvetica')
+           .fillColor(secondaryColor)
+           .text(sale.customer_name, 50, yPos + 20);
+      }
+
+      yPos += 80;
+
+      // Tabel header
+      const tableTop = yPos;
+      doc.font('Helvetica-Bold')
+         .fillColor(primaryColor)
+         .text('BESKRIVELSE', 50, tableTop)
+         .text('ANTAL', 300, tableTop)
+         .text('STK. PRIS', 400, tableTop)
+         .text('TOTAL', 480, tableTop);
+
+      // Understreg header
+      doc.moveTo(50, tableTop + 20)
+         .lineTo(550, tableTop + 20)
+         .strokeColor(primaryColor)
+         .stroke();
+
+      // Produkt linje
+      yPos = tableTop + 40;
+      doc.font('Helvetica')
+         .fillColor(secondaryColor)
+         .text(sale.project_name, 50, yPos)
+         .text(sale.quantity.toString(), 300, yPos)
+         .text(`${sale.unit_price.toFixed(2)} ${sale.currency}`, 400, yPos)
+         .text(`${sale.total_price.toFixed(2)} ${sale.currency}`, 480, yPos);
+
+      // Total sektion
+      yPos += 60;
+      doc.moveTo(50, yPos)
+         .lineTo(550, yPos)
+         .strokeColor('#E2E8F0')
+         .stroke();
+
+      yPos += 20;
+      doc.font('Helvetica-Bold')
+         .fillColor(primaryColor)
+         .text('Subtotal:', 350, yPos)
+         .text(`${sale.total_price.toFixed(2)} ${sale.currency}`, 480, yPos);
+
+      doc.font('Helvetica')
+         .fillColor(secondaryColor)
+         .text('Fragt:', 350, yPos + 25)
+         .text(`${sale.shipping_cost.toFixed(2)} ${sale.currency}`, 480, yPos + 25);
+
+      doc.font('Helvetica-Bold')
+         .fillColor(primaryColor)
+         .text('TOTAL:', 350, yPos + 50)
+         .text(`${(sale.total_price + sale.shipping_cost).toFixed(2)} ${sale.currency}`, 480, yPos + 50);
+
+      // Betalingsinformation
+      yPos += 100;
+      doc.font('Helvetica-Bold')
+         .text('BETALINGSINFORMATION', 50, yPos)
+         .font('Helvetica')
+         .fillColor(secondaryColor)
+         .text(settings.bank_details || '', 50, yPos + 20);
+
+      // Noter
+      if (sale.notes) {
+        yPos += 80;
+        doc.font('Helvetica-Bold')
+           .fillColor(primaryColor)
+           .text('NOTER', 50, yPos)
+           .font('Helvetica')
+           .fillColor(secondaryColor)
+           .text(sale.notes, 50, yPos + 20);
+      }
+
+      // Footer
+      doc.font('Helvetica')
+         .fontSize(8)
+         .fillColor(secondaryColor)
+         .text(
+           'Tak for din ordre!',
+           50,
+           750,
+           { align: 'center' }
+         );
+
+      return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+        doc.end();
+      });
+
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      throw error;
+    }
   }
 }
 

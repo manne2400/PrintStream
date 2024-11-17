@@ -89,6 +89,7 @@ interface InvoiceData {
     phone: string;
     vatId: string;
     bankDetails: string;
+    logo: string;
   };
   items: {
     description: string;
@@ -585,77 +586,169 @@ const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({ isOpen, onClose, 
         <head>
           <title>Invoice ${invoiceData.invoiceNumber}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .invoice-header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-            .company-info { text-align: right; }
-            .customer-info { margin-bottom: 40px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-            .totals { text-align: right; }
-            .totals div { margin: 5px 0; }
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0;
+              padding: 40px;
+              background-color: #f8fafc;
+              color: #1a202c;
+            }
+            .invoice-container {
+              background-color: white;
+              padding: 40px;
+              border-radius: 10px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .invoice-header { 
+              display: flex; 
+              justify-content: space-between; 
+              margin-bottom: 40px;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #e2e8f0;
+            }
+            .logo {
+              max-width: 200px;
+              max-height: 100px;
+              margin-bottom: 20px;
+            }
+            .company-info { 
+              text-align: right;
+              color: #4a5568;
+            }
+            .customer-info {
+              margin-bottom: 40px;
+              padding: 20px;
+              background-color: #f7fafc;
+              border-radius: 8px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 20px 0;
+            }
+            th {
+              background-color: #2b6cb0;
+              color: white;
+              padding: 12px;
+              text-align: left;
+            }
+            td {
+              padding: 12px;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            tr:nth-child(even) {
+              background-color: #f7fafc;
+            }
+            .totals {
+              text-align: right;
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 2px solid #e2e8f0;
+            }
+            .totals div {
+              margin: 8px 0;
+              color: #4a5568;
+            }
+            .total-amount {
+              font-size: 1.2em;
+              font-weight: bold;
+              color: #2b6cb0;
+            }
+            .payment-info {
+              margin-top: 40px;
+              padding: 20px;
+              background-color: #f7fafc;
+              border-radius: 8px;
+              color: #4a5568;
+            }
+            .footer {
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 1px solid #e2e8f0;
+              text-align: center;
+              color: #718096;
+              font-size: 0.9em;
+            }
             @media print {
-              button { display: none; }
+              body {
+                background-color: white;
+                padding: 0;
+              }
+              .invoice-container {
+                box-shadow: none;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="invoice-header">
-            <div>
-              <h1>INVOICE</h1>
-              <div>Invoice #: ${invoiceData.invoiceNumber}</div>
-              <div>Date: ${invoiceData.date}</div>
-              <div>Due Date: ${invoiceData.dueDate}</div>
+          <div class="invoice-container">
+            <div class="invoice-header">
+              <div>
+                ${invoiceData.companyInfo.logo ? 
+                  `<img src="${invoiceData.companyInfo.logo}" class="logo" onload="window.logoLoaded=true;" />` : 
+                  ''}
+                <h1 style="color: #2b6cb0; margin: 0;">INVOICE</h1>
+                <div style="color: #4a5568;">
+                  <div>Invoice #: ${invoiceData.invoiceNumber}</div>
+                  <div>Date: ${invoiceData.date}</div>
+                  <div>Due Date: ${invoiceData.dueDate}</div>
+                </div>
+              </div>
+              <div class="company-info">
+                <h3 style="color: #2b6cb0; margin: 0;">${invoiceData.companyInfo.name}</h3>
+                <div>${invoiceData.companyInfo.address}</div>
+                <div>Phone: ${invoiceData.companyInfo.phone}</div>
+                <div>Email: ${invoiceData.companyInfo.email}</div>
+                <div>VAT ID: ${invoiceData.companyInfo.vatId}</div>
+              </div>
             </div>
-            <div class="company-info">
-              <h3>${invoiceData.companyInfo.name}</h3>
-              <div>${invoiceData.companyInfo.address}</div>
-              <div>Phone: ${invoiceData.companyInfo.phone}</div>
-              <div>Email: ${invoiceData.companyInfo.email}</div>
-              <div>VAT: ${invoiceData.companyInfo.vatId}</div>
+
+            <div class="customer-info">
+              <h3 style="color: #2b6cb0; margin: 0 0 10px 0;">BILL TO:</h3>
+              ${invoiceData.customerInfo ? `
+                <div>${invoiceData.customerInfo.name}</div>
+                <div>${invoiceData.customerInfo.address}</div>
+                <div>Phone: ${invoiceData.customerInfo.phone}</div>
+                <div>Email: ${invoiceData.customerInfo.email}</div>
+                <div>VAT ID: ${invoiceData.customerInfo.vatId}</div>
+              ` : 'N/A'}
             </div>
-          </div>
 
-          <div class="customer-info">
-            <h3>Bill To:</h3>
-            ${invoiceData.customerInfo ? `
-              <div>${invoiceData.customerInfo.name}</div>
-              <div>${invoiceData.customerInfo.address}</div>
-              <div>Phone: ${invoiceData.customerInfo.phone}</div>
-              <div>Email: ${invoiceData.customerInfo.email}</div>
-              <div>VAT: ${invoiceData.customerInfo.vatId}</div>
-            ` : 'N/A'}
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Quantity</th>
-                <th>Unit Price</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${invoiceData.items.map(item => `
+            <table>
+              <thead>
                 <tr>
-                  <td>${item.description}</td>
-                  <td>${item.quantity}</td>
-                  <td>${invoiceData.currency} ${item.unitPrice.toFixed(2)}</td>
-                  <td>${invoiceData.currency} ${item.total.toFixed(2)}</td>
+                  <th>Description</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
                 </tr>
-              `).join('')}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                ${invoiceData.items.map(item => `
+                  <tr>
+                    <td>${item.description}</td>
+                    <td>${item.quantity}</td>
+                    <td>${invoiceData.currency} ${item.unitPrice.toFixed(2)}</td>
+                    <td>${invoiceData.currency} ${item.total.toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
 
-          <div class="totals">
-            <div>Subtotal: ${invoiceData.currency} ${invoiceData.subtotal.toFixed(2)}</div>
-            <div>Shipping: ${invoiceData.currency} ${invoiceData.shipping.toFixed(2)}</div>
-            <div><strong>Total: ${invoiceData.currency} ${invoiceData.total.toFixed(2)}</strong></div>
-          </div>
+            <div class="totals">
+              <div>Subtotal: ${invoiceData.currency} ${invoiceData.subtotal.toFixed(2)}</div>
+              <div>Shipping: ${invoiceData.currency} ${invoiceData.shipping.toFixed(2)}</div>
+              <div class="total-amount">Total: ${invoiceData.currency} ${invoiceData.total.toFixed(2)}</div>
+            </div>
 
-          <div style="margin-top: 40px;">
-            <h4>Payment Details:</h4>
-            <div>${invoiceData.companyInfo.bankDetails}</div>
+            <div class="payment-info">
+              <h4 style="color: #2b6cb0; margin: 0 0 10px 0;">PAYMENT DETAILS:</h4>
+              <div>${invoiceData.companyInfo.bankDetails}</div>
+            </div>
+
+            <div class="footer">
+              Thank you for your business!
+            </div>
           </div>
         </body>
       </html>
@@ -663,7 +756,19 @@ const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({ isOpen, onClose, 
 
     printWindow.document.write(html);
     printWindow.document.close();
-    printWindow.print();
+
+    if (invoiceData.companyInfo.logo) {
+      const checkLogoLoaded = () => {
+        if (printWindow.logoLoaded) {
+          setTimeout(() => printWindow.print(), 100);
+        } else {
+          setTimeout(checkLogoLoaded, 50);
+        }
+      };
+      checkLogoLoaded();
+    } else {
+      printWindow.print();
+    }
   };
 
   return (
@@ -892,7 +997,8 @@ const Sales: React.FC = () => {
         email: settings.company_email,
         phone: settings.company_phone,
         vatId: settings.vat_id,
-        bankDetails: settings.bank_details
+        bankDetails: settings.bank_details,
+        logo: settings.invoice_logo_path
       },
       items: sale.items.map(item => ({
         description: item.project_name,

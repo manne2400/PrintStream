@@ -3,7 +3,7 @@ import {
   Box, Heading, Text, VStack, FormControl, FormLabel,
   Input, NumberInput, NumberInputField, NumberInputStepper,
   NumberIncrementStepper, NumberDecrementStepper,
-  Select, Button, useToast, Divider, Textarea, useColorMode, Switch, Icon, Flex, Grid
+  Select, Button, useToast, Divider, Textarea, useColorMode, Switch, Icon, Flex, Grid, Image
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
 import { SettingsOperations, Settings as SettingsType, LicenseOperations } from '../database/operations';
@@ -16,8 +16,10 @@ import {
   BuildingOfficeIcon, 
   BanknotesIcon, 
   KeyIcon, 
-  Cog6ToothIcon 
+  Cog6ToothIcon, 
+  PhotoIcon
 } from '@heroicons/react/24/outline';
+import { dialog } from '@electron/remote';
 
 const Settings: React.FC = () => {
   const toast = useToast();
@@ -31,7 +33,9 @@ const Settings: React.FC = () => {
     company_phone: '',
     company_email: '',
     bank_details: '',
-    vat_id: ''
+    vat_id: '',
+    invoice_logo_path: '',
+    dark_mode: false
   });
   const { updateCurrency } = useCurrency();
 
@@ -297,6 +301,36 @@ const Settings: React.FC = () => {
       setCustomCurrency('');
     }
   };
+
+  const handleSelectLogo = useCallback(async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+          { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif'] }
+        ]
+      });
+
+      if (!result.canceled && result.filePaths.length > 0) {
+        const logoPath = result.filePaths[0];
+        const db = await initializeDatabase();
+        const settingsOps = new SettingsOperations(db);
+        await settingsOps.updateSettings({ invoice_logo_path: logoPath });
+        setSettings(prev => ({ ...prev, invoice_logo_path: logoPath }));
+        toast({
+          title: 'Logo updated',
+          description: 'Your logo has been saved',
+          status: 'success'
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An error occurred. Please try again.',
+        status: 'error'
+      });
+    }
+  }, [toast]);
 
   return (
     <Box p={4}>
@@ -574,7 +608,53 @@ const Settings: React.FC = () => {
             </VStack>
           </Box>
 
-          {/* Save Button */}
+          {/* Logo Settings */}
+          <Box 
+            p={6} 
+            bg="whiteAlpha.100" 
+            borderRadius="lg" 
+            boxShadow="sm"
+            borderWidth="1px"
+            borderColor="whiteAlpha.200"
+          >
+            <Flex align="center" mb={6}>
+              <Icon as={PhotoIcon} boxSize={6} color="pink.500" mr={4} />
+              <Box>
+                <Heading size="md">Invoice Logo</Heading>
+                <Text fontSize="sm" color="whiteAlpha.600">
+                  Select your company logo for invoices
+                </Text>
+              </Box>
+            </Flex>
+
+            <FormControl>
+              <Button
+                leftIcon={<Icon as={PhotoIcon} />}
+                onClick={handleSelectLogo}
+                colorScheme="blue"
+                mb={4}
+                size="md"
+              >
+                Select Logo
+              </Button>
+              
+              {settings.invoice_logo_path && (
+                <Box mt={4} p={4} borderWidth={1} borderRadius="md" borderColor="whiteAlpha.200">
+                  <Image 
+                    src={settings.invoice_logo_path} 
+                    alt="Invoice Logo" 
+                    maxH="100px"
+                    objectFit="contain"
+                  />
+                  <Text fontSize="sm" color="whiteAlpha.600" mt={2}>
+                    {settings.invoice_logo_path}
+                  </Text>
+                </Box>
+              )}
+            </FormControl>
+          </Box>
+
+          {/* Save Settings Button */}
           <Button colorScheme="blue" onClick={handleSave} size="lg">
             Save Settings
           </Button>

@@ -137,16 +137,18 @@ const initializeDatabase = async (): Promise<Database> => {
   await exec(`
     CREATE TABLE IF NOT EXISTS settings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      printer_hourly_rate REAL DEFAULT 0,
-      post_processing_cost REAL DEFAULT 0,
-      currency TEXT DEFAULT 'DKK',
+      printer_hourly_rate REAL DEFAULT 100,
+      post_processing_cost REAL DEFAULT 100,
+      currency TEXT DEFAULT 'EUR',
       profit_margin REAL DEFAULT 30,
       company_name TEXT,
       company_address TEXT,
       company_phone TEXT,
       company_email TEXT,
       bank_details TEXT,
-      vat_id TEXT
+      vat_id TEXT,
+      dark_mode BOOLEAN DEFAULT false,
+      invoice_logo_path TEXT
     );
   `);
 
@@ -441,6 +443,19 @@ const initializeDatabase = async (): Promise<Database> => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Tilføj invoice_logo_path kolonne hvis den ikke findes
+  try {
+    await exec(`
+      ALTER TABLE settings 
+      ADD COLUMN invoice_logo_path TEXT;
+    `);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
 
   return { run, get, all, exec }
 }

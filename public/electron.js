@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+require('@electron/remote/main').initialize();
 const path = require('path');
 const isDev = require('electron-is-dev');
 const fs = require('fs');
@@ -9,9 +10,12 @@ function createWindow() {
     height: 800,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      enableRemoteModule: true
     }
   });
+
+  require('@electron/remote/main').enable(win.webContents);
 
   const indexPath = path.join(__dirname, 'index.html');
   console.log('Loading file from:', indexPath);
