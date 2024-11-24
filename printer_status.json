@@ -1,7 +1,7 @@
 {
   "gcode_state": "FINISH",
-  "nozzle_temper": 30.65625,
-  "bed_temper": 31.03125,
+  "nozzle_temper": 24.03125,
+  "bed_temper": 20.5,
   "subtask_name": "Meshed Christmas Tree",
   "mc_percent": 100,
   "mc_remaining_time": 0,

@@ -101,6 +101,8 @@ export interface Sale {
   currency: string;
   shipping_cost: number;
   created_at?: string;
+  coupon_code?: string;
+  coupon_amount?: number;
 }
 
 export interface CustomMaterialType {
@@ -126,6 +128,16 @@ export interface SavedPrinter {
   serial: string;
   name: string;
   created_at: string;
+}
+
+export interface Coupon {
+  id?: number;
+  code: string;
+  amount: number;
+  currency: string;
+  is_used: boolean;
+  customer_id: number;
+  created_at?: string;
 }
 
 export class FilamentOperations {
@@ -582,8 +594,8 @@ export class SalesOperations {
           payment_status, payment_due_date, notes,
           project_name, customer_name,
           material_cost, printing_cost, processing_cost, extra_costs,
-          currency, shipping_cost
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          currency, shipping_cost, coupon_code, coupon_amount
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         sale.project_id,
         sale.customer_id,
@@ -603,7 +615,9 @@ export class SalesOperations {
         sale.processing_cost,
         sale.extra_costs,
         sale.currency,
-        sale.shipping_cost
+        sale.shipping_cost,
+        sale.coupon_code,
+        sale.coupon_amount
       ]);
 
       await this.db.run('COMMIT');
@@ -809,6 +823,19 @@ export class SalesOperations {
          .text('TOTAL:', 350, yPos + 50)
          .text(`${(sale.total_price + sale.shipping_cost).toFixed(2)} ${sale.currency}`, 480, yPos + 50);
 
+      // Efter total sektion, tilføj kupon sektion hvis der er en kupon
+      if (sale.coupon_code) {
+        yPos += 80;
+        doc.font('Helvetica-Bold')
+           .fillColor(primaryColor)
+           .text('Your Coupon Code for Next Purchase:', 50, yPos)
+           .font('Helvetica')
+           .fillColor('blue')
+           .text(sale.coupon_code, 50, yPos + 20)
+           .fillColor(secondaryColor)
+           .text(`Valid for ${sale.coupon_amount} ${sale.currency} on your next purchase`, 50, yPos + 40);
+      }
+
       // Betalingsinformation
       yPos += 100;
       doc.font('Helvetica-Bold')
@@ -851,6 +878,21 @@ export class SalesOperations {
       console.error('Error generating invoice:', error);
       throw error;
     }
+  }
+
+  async updateSaleByInvoice(invoiceNumber: string, updates: {
+    coupon_code?: string;
+    coupon_amount?: number;
+  }): Promise<void> {
+    const updates_sql = Object.keys(updates)
+      .map(key => `${key} = ?`)
+      .join(', ');
+    const values = [...Object.values(updates), invoiceNumber];
+    
+    await this.db.run(
+      `UPDATE sales SET ${updates_sql} WHERE invoice_number = ?`,
+      values
+    );
   }
 }
 
@@ -1124,5 +1166,75 @@ export class PrinterOperations {
 
   async deletePrinter(id: number): Promise<void> {
     await this.db.run('DELETE FROM printer_config WHERE id = ?', [id]);
+  }
+}
+
+export class CouponOperations {
+  constructor(private db: Database) {}
+
+  async createCoupon(data: {
+    customer_id: number;
+    amount: number;
+    currency: string;
+  }): Promise<string> {
+    // Generer unik kuponkode (f.eks. CUST-123-ABC)
+    const code = `CUST-${data.customer_id}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    
+    await this.db.run(
+      `INSERT INTO coupons (code, customer_id, amount, currency)
+       VALUES (?, ?, ?, ?)`,
+      [code, data.customer_id, data.amount, data.currency]
+    );
+
+    return code;
+  }
+
+  async getCoupon(code: string): Promise<{
+    id: number;
+    code: string;
+    customer_id: number;
+    amount: number;
+    currency: string;
+    is_used: boolean;
+  } | null> {
+    return this.db.get(
+      'SELECT * FROM coupons WHERE code = ? AND is_used = FALSE',
+      [code]
+    );
+  }
+
+  async markCouponAsUsed(code: string): Promise<void> {
+    await this.db.run(
+      'UPDATE coupons SET is_used = TRUE WHERE code = ?',
+      [code]
+    );
+  }
+
+  async applyCoupon(code: string, customerId: number): Promise<{
+    success: boolean;
+    amount?: number;
+    currency?: string;
+    error?: string;
+  }> {
+    const coupon = await this.getCoupon(code);
+    
+    if (!coupon) {
+      return { success: false, error: 'Invalid coupon code' };
+    }
+    
+    if (coupon.is_used) {
+      return { success: false, error: 'Coupon has already been used' };
+    }
+
+    if (coupon.customer_id !== customerId) {
+      return { success: false, error: 'This coupon belongs to another customer' };
+    }
+    
+    await this.markCouponAsUsed(code);
+    return { 
+      success: true, 
+      amount: coupon.amount,
+      currency: coupon.currency
+    };
   }
 } 

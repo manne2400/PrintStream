@@ -9,10 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { PlusIcon, MagnifyingGlassIcon, ChevronUpIcon, ChevronDownIcon, CreditCardIcon, TrashIcon, MinusIcon, PrinterIcon } from '@heroicons/react/24/outline';
 import initializeDatabase from '../database/setup';
-import { SalesOperations, ProjectOperations, FilamentOperations } from '../database/operations';
-import { PrintJobOperations } from '../database/operations';
-import { CustomerOperations } from '../database/operations';
-import { SettingsOperations } from '../database/operations';
+import { SalesOperations, ProjectOperations, FilamentOperations, PrintJobOperations, CustomerOperations, SettingsOperations, CouponOperations } from '../database/operations';
 import { useCurrency } from '../context/CurrencyContext';
 import { Sale, SaleItem } from '../types/sales';
 import { CustomerSelect } from '../components/sales/CustomerSelect';
@@ -101,6 +98,8 @@ interface InvoiceData {
   subtotal: number;
   total: number;
   currency: string;
+  couponCode?: string;
+  couponAmount?: number;
 }
 
 interface PrintInvoiceModalProps {
@@ -123,6 +122,8 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
   const toast = useToast();
   const { currency } = useCurrency();
   const [shippingCost, setShippingCost] = useState(0);
+  const [generateCoupon, setGenerateCoupon] = useState(false);
+  const [couponAmount, setCouponAmount] = useState<number>(0);
 
   useEffect(() => {
     loadPrintJobsAndCustomers();
@@ -295,13 +296,15 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
       const dueDate = new Date();
       dueDate.setDate(now.getDate() + 30);
 
+      let createdSaleId = null;
+
       // Opret et salg for hvert item
       for (const item of formData.items) {
         await printJobOps.updatePrintJob(item.printJobId, {
           quantity: (await printJobOps.getPrintJobById(item.printJobId)).quantity - item.quantity
         });
 
-        await salesOps.addSale({
+        createdSaleId = await salesOps.addSale({
           project_id: item.printJobId,
           customer_id: formData.customerId ? parseInt(formData.customerId) : null,
           print_job_id: item.printJobId,
@@ -324,6 +327,24 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
         });
       }
 
+      // Generer kupon efter salget er oprettet
+      if (generateCoupon && couponAmount > 0 && formData.customerId) {
+        const couponOps = new CouponOperations(db);
+        const couponCode = await couponOps.createCoupon({
+          customer_id: parseInt(formData.customerId),
+          amount: couponAmount,
+          currency: settings.currency
+        });
+        
+        // Opdater salget med kuponkoden
+        if (createdSaleId) {
+          await salesOps.updateSaleByInvoice(invoiceNumber, {
+            coupon_code: couponCode,
+            coupon_amount: couponAmount
+          });
+        }
+      }
+
       toast({
         title: 'Success',
         description: 'Sale created successfully',
@@ -344,6 +365,56 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
         isClosable: true,
       });
     }
+  };
+
+  const getInvoiceData = async (sale: any): Promise<InvoiceData> => {
+    const db = await initializeDatabase();
+    const settingsOps = new SettingsOperations(db);
+    const customerOps = new CustomerOperations(db);
+    
+    const settings = await settingsOps.getSettings();
+    let customerInfo = null;
+    
+    if (sale.customer_id) {
+      const customer = await customerOps.getCustomerById(sale.customer_id);
+      if (customer) {
+        customerInfo = {
+          name: customer.name,
+          address: customer.address,
+          email: customer.email,
+          phone: customer.phone,
+          vatId: customer.vat_id
+        };
+      }
+    }
+
+    return {
+      invoiceNumber: sale.invoice_number,
+      date: new Date(sale.sale_date).toLocaleDateString(),
+      dueDate: new Date(sale.payment_due_date).toLocaleDateString(),
+      customerInfo,
+      companyInfo: {
+        name: settings.company_name,
+        address: settings.company_address,
+        email: settings.company_email,
+        phone: settings.company_phone,
+        vatId: settings.vat_id,
+        bankDetails: settings.bank_details,
+        logo: settings.invoice_logo_path
+      },
+      items: [{
+        description: sale.project_name,
+        quantity: sale.quantity,
+        unitPrice: sale.unit_price,
+        total: sale.total_price
+      }],
+      shipping: sale.shipping_cost || 0,
+      subtotal: sale.total_price,
+      total: sale.total_price + (sale.shipping_cost || 0),
+      currency: settings.currency,
+      couponCode: sale.coupon_code,
+      couponAmount: sale.coupon_amount
+    };
   };
 
   return (
@@ -467,6 +538,34 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
                 </NumberInputStepper>
               </NumberInput>
             </FormControl>
+          </Box>
+
+          <Box mt={4} px={6}>
+            <FormControl>
+              <Checkbox
+                isChecked={generateCoupon}
+                onChange={(e) => setGenerateCoupon(e.target.checked)}
+              >
+                Generate Coupon for Next Purchase
+              </Checkbox>
+            </FormControl>
+
+            {generateCoupon && (
+              <FormControl mt={3}>
+                <FormLabel>Coupon Amount ({currency})</FormLabel>
+                <NumberInput
+                  value={couponAmount}
+                  onChange={(_, value) => setCouponAmount(value)}
+                  min={0}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+            )}
           </Box>
 
           <Box mt={4} px={6}>
@@ -741,6 +840,14 @@ const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({ isOpen, onClose, 
               <div class="total-amount">Total: ${invoiceData.currency} ${invoiceData.total.toFixed(2)}</div>
             </div>
 
+            ${invoiceData.couponCode ? `
+              <div style="margin-top: 40px; padding: 20px; background-color: #EDF2F7; border-radius: 8px;">
+                <h4 style="color: #2B6CB0; margin: 0 0 10px 0;">YOUR COUPON CODE FOR NEXT PURCHASE:</h4>
+                <div style="font-size: 1.2em; color: #2B6CB0; font-weight: bold;">${invoiceData.couponCode}</div>
+                <div style="color: #4A5568;">Valid for ${invoiceData.currency} ${invoiceData.couponAmount} on your next purchase</div>
+              </div>
+            ` : ''}
+
             <div class="payment-info">
               <h4 style="color: #2b6cb0; margin: 0 0 10px 0;">PAYMENT DETAILS:</h4>
               <div>${invoiceData.companyInfo.bankDetails}</div>
@@ -969,9 +1076,13 @@ const Sales: React.FC = () => {
     const db = await initializeDatabase();
     const settingsOps = new SettingsOperations(db);
     const customerOps = new CustomerOperations(db);
+    const salesOps = new SalesOperations(db);
     
     const settings = await settingsOps.getSettings();
     let customerInfo = null;
+    
+    // Hent det første salg for at få kupon information
+    const firstSale = await salesOps.getSaleById(sale.id);
     
     if (sale.customer_name) {
       const customer = await customerOps.getCustomerByName(sale.customer_name);
@@ -1009,7 +1120,9 @@ const Sales: React.FC = () => {
       shipping: sale.shipping_cost,
       subtotal: sale.items_total,
       total: sale.total_price,
-      currency: settings.currency
+      currency: settings.currency,
+      couponCode: firstSale?.coupon_code,  // Tilføj kuponkode
+      couponAmount: firstSale?.coupon_amount  // Tilføj kuponbeløb
     };
   };
 

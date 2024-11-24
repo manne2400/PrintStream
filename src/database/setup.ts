@@ -248,12 +248,25 @@ const initializeDatabase = async (): Promise<Database> => {
       extra_costs REAL NOT NULL,
       currency TEXT NOT NULL,
       shipping_cost REAL DEFAULT 0,
+      coupon_code TEXT,
+      coupon_amount REAL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects (id),
       FOREIGN KEY (customer_id) REFERENCES customers (id),
       FOREIGN KEY (print_job_id) REFERENCES print_jobs (id)
     );
   `);
+
+  // Tilføj kolonner hvis de ikke findes
+  try {
+    await exec(`ALTER TABLE sales ADD COLUMN coupon_code TEXT;`);
+    await exec(`ALTER TABLE sales ADD COLUMN coupon_amount REAL;`);
+  } catch (err: unknown) {
+    const error = err as Error;
+    if (!error.message.includes('duplicate column name')) {
+      throw err;
+    }
+  }
 
   // Tilføj license tabel
   await exec(`
@@ -414,6 +427,8 @@ const initializeDatabase = async (): Promise<Database> => {
       extra_costs REAL NOT NULL,
       currency TEXT NOT NULL,
       shipping_cost REAL DEFAULT 0,
+      coupon_code TEXT,
+      coupon_amount REAL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (project_id) REFERENCES projects (id),
       FOREIGN KEY (customer_id) REFERENCES customers (id),
@@ -466,6 +481,20 @@ const initializeDatabase = async (): Promise<Database> => {
       serial TEXT NOT NULL,
       name TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Tilføj denne SQL til din initializeDatabase funktion
+  await exec(`
+    CREATE TABLE IF NOT EXISTS coupons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT UNIQUE NOT NULL,
+      customer_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL,
+      is_used BOOLEAN DEFAULT FALSE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers (id)
     );
   `);
 

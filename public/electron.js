@@ -165,6 +165,7 @@ async function setupPythonMonitor(printerConfig) {
     cwd: workingDir
   });
 
+  // Kun log kritiske fejl
   printerProcess.stderr.on('data', (data) => {
     if (data.toString().includes('Error:')) {
       console.error(`Python error: ${data}`);
