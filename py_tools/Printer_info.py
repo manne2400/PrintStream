@@ -55,7 +55,7 @@ if __name__ == "__main__":
         print("Starting printer monitoring...")
         monitor.start_monitoring()
         while True:
-            time.sleep(1)
+            time.sleep(2)
     except KeyboardInterrupt:
         print("Stopping printer monitoring...")
         monitor.stop_monitoring()

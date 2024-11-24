@@ -18,7 +18,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  ModalCloseButton
+  ModalCloseButton,
+  Select
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
 import { PrinterOperations } from '../database/operations';
@@ -45,6 +46,15 @@ interface PrinterConfig {
   name?: string;
 }
 
+interface SavedPrinter {
+  id: number;
+  ip_address: string;
+  access_code: string;
+  serial: string;
+  name: string;
+  created_at: string;
+}
+
 const PrinterStatus: React.FC = () => {
   const [status, setStatus] = useState<PrinterStatusData | null>(null);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -53,25 +63,32 @@ const PrinterStatus: React.FC = () => {
     access_code: '',
     serial: ''
   });
+  const [savedPrinters, setSavedPrinters] = useState<SavedPrinter[]>([]);
+  const [selectedPrinterId, setSelectedPrinterId] = useState<number | null>(null);
   const toast = useToast();
+  const [isMonitoring, setIsMonitoring] = useState(false);
 
   useEffect(() => {
-    loadPrinterConfig();
-    const interval = setInterval(readStatusFile, 1000);
+    loadSavedPrinters();
+    const interval = setInterval(readStatusFile, 2000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadPrinterConfig = async () => {
+  const loadSavedPrinters = async () => {
     try {
       const db = await initializeDatabase();
       const printerOps = new PrinterOperations(db);
-      const savedConfig = await printerOps.getPrinterConfig();
-      if (savedConfig) {
-        setConfig(savedConfig);
-        startMonitoring(savedConfig);
+      const printers = await printerOps.getAllPrinters();
+      setSavedPrinters(printers);
+      
+      if (printers.length > 0 && !selectedPrinterId) {
+        const latestPrinter = printers[printers.length - 1];
+        setSelectedPrinterId(latestPrinter.id);
+        setConfig(latestPrinter);
+        startMonitoring(latestPrinter);
       }
     } catch (error) {
-      console.error('Failed to load printer config:', error);
+      console.error('Failed to load saved printers:', error);
     }
   };
 
@@ -90,6 +107,7 @@ const PrinterStatus: React.FC = () => {
     try {
       const result = await ipcRenderer.invoke('start-printer-monitor', printerConfig);
       if (result.success) {
+        setIsMonitoring(true);
         toast({
           title: 'Printer monitoring started',
           status: 'success',
@@ -101,7 +119,7 @@ const PrinterStatus: React.FC = () => {
     } catch (error) {
       toast({
         title: 'Failed to start monitoring',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
         status: 'error',
         duration: 5000
       });
@@ -112,6 +130,7 @@ const PrinterStatus: React.FC = () => {
     try {
       const result = await ipcRenderer.invoke('stop-printer-monitor');
       if (result.success) {
+        setIsMonitoring(false);
         toast({
           title: 'Printer monitoring stopped',
           status: 'info',
@@ -137,12 +156,19 @@ const PrinterStatus: React.FC = () => {
       const db = await initializeDatabase();
       const printerOps = new PrinterOperations(db);
       await printerOps.savePrinterConfig(config);
+      await loadSavedPrinters();
       await startMonitoring(config);
       setIsConfigOpen(false);
+      
+      toast({
+        title: 'Printer configuration saved',
+        status: 'success',
+        duration: 3000
+      });
     } catch (error) {
       toast({
         title: 'Failed to save config',
-        description: error.message,
+        description: error instanceof Error ? error.message : 'Unknown error',
         status: 'error',
         duration: 5000
       });
@@ -186,22 +212,33 @@ const PrinterStatus: React.FC = () => {
       <HStack justify="space-between" mb={5}>
         <Heading>Printer Status</Heading>
         <HStack spacing={4}>
-          <Button 
-            colorScheme={status?.connected ? "red" : "green"}
-            onClick={status?.connected ? stopMonitoring : () => startMonitoring(config)}
+          <Select 
+            width="200px"
+            value={selectedPrinterId || ''}
+            onChange={(e) => {
+              const id = Number(e.target.value);
+              setSelectedPrinterId(id);
+              const printer = savedPrinters.find(p => p.id === id);
+              if (printer) {
+                setConfig(printer);
+                startMonitoring(printer);
+              }
+            }}
           >
-            {status?.connected ? "Stop Monitoring" : "Start Monitoring"}
+            <option value="">Select Printer</option>
+            {savedPrinters.map(printer => (
+              <option key={printer.id} value={printer.id}>
+                {printer.name || printer.serial}
+              </option>
+            ))}
+          </Select>
+          <Button 
+            colorScheme={isMonitoring ? "red" : "green"}
+            onClick={isMonitoring ? stopMonitoring : () => startMonitoring(config)}
+          >
+            {isMonitoring ? "Stop Monitoring" : "Start Monitoring"}
           </Button>
-          {status && !status.connected && (
-            <Button 
-              colorScheme="blue" 
-              onClick={reconnect}
-              isDisabled={!config.ip_address}
-            >
-              Reconnect
-            </Button>
-          )}
-          <Button onClick={() => setIsConfigOpen(true)}>Configure Printer</Button>
+          <Button onClick={() => setIsConfigOpen(true)}>Add Printer</Button>
         </HStack>
       </HStack>
 

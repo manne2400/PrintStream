@@ -119,6 +119,15 @@ export interface InvoicePreview {
   logo_path?: string;
 }
 
+export interface SavedPrinter {
+  id: number;
+  ip_address: string;
+  access_code: string;
+  serial: string;
+  name: string;
+  created_at: string;
+}
+
 export class FilamentOperations {
   private db: Database
 
@@ -1105,12 +1114,15 @@ export class PrinterOperations {
     );
   }
 
-  async getPrinterConfig(): Promise<{
-    ip_address: string;
-    access_code: string;
-    serial: string;
-    name?: string;
-  } | null> {
-    return this.db.get('SELECT * FROM printer_config ORDER BY id DESC LIMIT 1');
+  async getAllPrinters(): Promise<SavedPrinter[]> {
+    return this.db.all('SELECT * FROM printer_config ORDER BY created_at DESC');
+  }
+
+  async getPrinterById(id: number): Promise<SavedPrinter | null> {
+    return this.db.get('SELECT * FROM printer_config WHERE id = ?', [id]);
+  }
+
+  async deletePrinter(id: number): Promise<void> {
+    await this.db.run('DELETE FROM printer_config WHERE id = ?', [id]);
   }
 } 
