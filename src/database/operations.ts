@@ -1087,4 +1087,30 @@ export class CustomMaterialTypeOperations {
       [id]
     );
   }
+}
+
+export class PrinterOperations {
+  constructor(private db: Database) {}
+
+  async savePrinterConfig(config: {
+    ip_address: string;
+    access_code: string;
+    serial: string;
+    name?: string;
+  }): Promise<void> {
+    await this.db.run(
+      `INSERT INTO printer_config (ip_address, access_code, serial, name)
+       VALUES (?, ?, ?, ?)`,
+      [config.ip_address, config.access_code, config.serial, config.name]
+    );
+  }
+
+  async getPrinterConfig(): Promise<{
+    ip_address: string;
+    access_code: string;
+    serial: string;
+    name?: string;
+  } | null> {
+    return this.db.get('SELECT * FROM printer_config ORDER BY id DESC LIMIT 1');
+  }
 } 

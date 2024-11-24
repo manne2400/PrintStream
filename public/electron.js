@@ -3,6 +3,9 @@ require('@electron/remote/main').initialize();
 const path = require('path');
 const isDev = require('electron-is-dev');
 const fs = require('fs');
+const { spawn } = require('child_process');
+
+let printerProcess = null;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -133,6 +136,112 @@ ipcMain.handle('restore-database', async (event, backupPath) => {
     if (fs.existsSync(tempBackup)) {
       fs.unlinkSync(tempBackup);
     }
+  }
+});
+
+// Tilføj denne funktion
+async function setupPythonMonitor(printerConfig) {
+  if (printerProcess) {
+    console.log('Stopping existing Python process');
+    printerProcess.kill();
+    printerProcess = null;
+  }
+
+  // Brug system Python i stedet for embedded Python
+  const pythonPath = 'python';
+  const scriptPath = isDev 
+    ? path.join(app.getAppPath(), 'py_tools', 'Printer_info.py')
+    : path.join(process.resourcesPath, 'py_tools', 'Printer_info.py');
+
+  // Sørg for at vi er i den korrekte arbejdsmappe
+  const workingDir = isDev 
+    ? app.getAppPath()
+    : path.join(process.resourcesPath, '..');
+
+  console.log('Starting Python process with:');
+  console.log('Python path:', pythonPath);
+  console.log('Script path:', scriptPath);
+  console.log('Working directory:', workingDir);
+  console.log('Config:', printerConfig);
+  
+  printerProcess = spawn(pythonPath, [
+    scriptPath,  // Fjernet citationstegn da vi bruger arbejdsmappe
+    '--ip', printerConfig.ip_address,
+    '--code', printerConfig.access_code,
+    '--serial', printerConfig.serial
+  ], {
+    stdio: 'pipe',
+    cwd: workingDir  // Sæt arbejdsmappen
+  });
+
+  printerProcess.stdout.on('data', (data) => {
+    console.log(`Python output: ${data}`);
+  });
+
+  printerProcess.stderr.on('data', (data) => {
+    console.error(`Python error: ${data}`);
+  });
+
+  printerProcess.on('close', (code) => {
+    console.log(`Python process exited with code ${code}`);
+    printerProcess = null;
+  });
+
+  return printerProcess;
+}
+
+// Tilføj IPC handlers
+ipcMain.handle('start-printer-monitor', async (event, config) => {
+  try {
+    const process = await setupPythonMonitor(config);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to start printer monitor:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Tilføj stop handler
+ipcMain.handle('stop-printer-monitor', async () => {
+  if (printerProcess) {
+    printerProcess.kill();
+    printerProcess = null;
+    return { success: true };
+  }
+  return { success: false, error: 'No printer monitor running' };
+});
+
+// Tilføj cleanup ved app quit
+app.on('before-quit', () => {
+  if (printerProcess) {
+    printerProcess.kill();
+  }
+});
+
+// Opdater read-status-file handler
+ipcMain.handle('read-status-file', async (event, filePath) => {
+  try {
+    const fullPath = path.join(app.getAppPath(), filePath);
+    console.log('Reading status file from:', fullPath);
+    const rawData = fs.readFileSync(fullPath, 'utf8');
+    const data = JSON.parse(rawData);
+    
+    // Tilføj connected og last_update hvis de mangler
+    const enrichedData = {
+      connected: true,
+      last_update: Date.now() / 1000,
+      ...data
+    };
+    
+    console.log('Status data:', enrichedData);
+    return JSON.stringify(enrichedData);
+  } catch (error) {
+    console.error('Error reading status file:', error);
+    return JSON.stringify({
+      connected: false,
+      error: 'Waiting for printer connection...',
+      last_update: Date.now() / 1000
+    });
   }
 });
 

@@ -457,6 +457,18 @@ const initializeDatabase = async (): Promise<Database> => {
     }
   }
 
+  // Tilføj denne SQL til din initializeDatabase funktion
+  await exec(`
+    CREATE TABLE IF NOT EXISTS printer_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ip_address TEXT NOT NULL,
+      access_code TEXT NOT NULL,
+      serial TEXT NOT NULL,
+      name TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   return { run, get, all, exec }
 }
 

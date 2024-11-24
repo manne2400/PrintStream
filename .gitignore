@@ -1,6 +1,7 @@
 # Dependencies
 /node_modules
 /license-admin/node_modules
+/py_tools/python
 
 # Production build
 /build

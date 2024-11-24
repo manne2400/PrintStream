@@ -25,7 +25,8 @@ const Sidebar: React.FC = () => {
     { name: 'Customers', icon: UserGroupIcon, path: '/customers' },
     { name: 'Sales', icon: ShoppingCartIcon, path: '/sales' },
     { name: 'Reports', icon: ChartBarIcon, path: '/reports' },
-    { name: 'Settings', icon: Cog6ToothIcon, path: '/settings' }
+    { name: 'Settings', icon: Cog6ToothIcon, path: '/settings' },
+    { name: 'Printer Status', icon: PrinterIcon, path: '/printer-status' }
   ];
 
   return (

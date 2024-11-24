@@ -19,6 +19,7 @@ import Sales from './pages/Sales';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import About from './pages/About';
+import PrinterStatus from './pages/PrinterStatus';
 
 import { version } from '../package.json';
 
@@ -205,6 +206,7 @@ const AppContent: React.FC = () => {
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/about" element={<About />} />
+        <Route path="/printer-status" element={<PrinterStatus />} />
       </Routes>
     </Layout>
   );
