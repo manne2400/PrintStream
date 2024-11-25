@@ -103,6 +103,8 @@ export interface Sale {
   created_at?: string;
   coupon_code?: string;
   coupon_amount?: number;
+  generated_coupon_code?: string;
+  generated_coupon_amount?: number;
 }
 
 export interface CustomMaterialType {
@@ -823,17 +825,17 @@ export class SalesOperations {
          .text('TOTAL:', 350, yPos + 50)
          .text(`${(sale.total_price + sale.shipping_cost).toFixed(2)} ${sale.currency}`, 480, yPos + 50);
 
-      // Efter total sektion, tilføj kupon sektion hvis der er en kupon
-      if (sale.coupon_code) {
+      // Efter total sektion, tilføj kupon sektion hvis der er en genereret kupon
+      if (sale.generated_coupon_code) {
         yPos += 80;
         doc.font('Helvetica-Bold')
            .fillColor(primaryColor)
            .text('Your Coupon Code for Next Purchase:', 50, yPos)
            .font('Helvetica')
            .fillColor('blue')
-           .text(sale.coupon_code, 50, yPos + 20)
+           .text(sale.generated_coupon_code, 50, yPos + 20)
            .fillColor(secondaryColor)
-           .text(`Valid for ${sale.coupon_amount} ${sale.currency} on your next purchase`, 50, yPos + 40);
+           .text(`Valid for ${sale.generated_coupon_amount} ${sale.currency} on your next purchase`, 50, yPos + 40);
       }
 
       // Betalingsinformation
@@ -883,15 +885,21 @@ export class SalesOperations {
   async updateSaleByInvoice(invoiceNumber: string, updates: {
     coupon_code?: string;
     coupon_amount?: number;
+    generated_coupon_code?: string;
+    generated_coupon_amount?: number;
   }): Promise<void> {
-    const updates_sql = Object.keys(updates)
-      .map(key => `${key} = ?`)
+    const updateFields = Object.entries(updates)
+      .filter(([_, value]) => value !== undefined)
+      .map(([key, _]) => `${key} = ?`)
       .join(', ');
-    const values = [...Object.values(updates), invoiceNumber];
+    
+    const values = Object.values(updates).filter(value => value !== undefined);
     
     await this.db.run(
-      `UPDATE sales SET ${updates_sql} WHERE invoice_number = ?`,
-      values
+      `UPDATE sales 
+       SET ${updateFields}
+       WHERE invoice_number = ?`,
+      [...values, invoiceNumber]
     );
   }
 }

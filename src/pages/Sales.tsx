@@ -108,6 +108,40 @@ interface PrintInvoiceModalProps {
   invoiceData: InvoiceData;
 }
 
+interface FormData {
+  customerId: string;
+  items: Array<{
+    printJobId: number;
+    projectName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    costs: {
+      materialCost: number;
+      printingCost: number;
+      postProcessingCost: number;
+      extraCosts: number;
+    }
+  }>;
+  paymentStatus: 'pending' | 'paid' | 'cancelled';
+  paymentDueDate: string;
+  notes: string;
+}
+
+interface PrintJob {
+  id: number;
+  project_id: number;
+  project_name: string;
+  quantity: number;
+  // ... andre felter
+}
+
+interface Customer {
+  id: number;
+  name: string;
+  // ... andre felter
+}
+
 const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComplete }) => {
   const [formData, setFormData] = useState<FormData>({
     customerId: '',
@@ -124,6 +158,11 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
   const [shippingCost, setShippingCost] = useState(0);
   const [generateCoupon, setGenerateCoupon] = useState(false);
   const [couponAmount, setCouponAmount] = useState<number>(0);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    amount: number;
+  } | null>(null);
 
   useEffect(() => {
     loadPrintJobsAndCustomers();
@@ -287,16 +326,14 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
       const db = await initializeDatabase();
       const salesOps = new SalesOperations(db);
       const printJobOps = new PrintJobOperations(db);
-      const totals = calculateTotals();
-      
       const settingsOps = new SettingsOperations(db);
       const settings = await settingsOps.getSettings();
       const invoiceNumber = await salesOps.getNextInvoiceNumber();
-      const now = new Date();
-      const dueDate = new Date();
-      dueDate.setDate(now.getDate() + 30);
-
-      let createdSaleId = null;
+      
+      // Beregn rabat per item hvis der er anvendt en kupon
+      const discountPerItem = appliedCoupon 
+        ? (appliedCoupon.amount / formData.items.length) 
+        : 0;
 
       // Opret et salg for hvert item
       for (const item of formData.items) {
@@ -304,17 +341,20 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
           quantity: (await printJobOps.getPrintJobById(item.printJobId)).quantity - item.quantity
         });
 
-        createdSaleId = await salesOps.addSale({
+        // Beregn den reducerede pris for dette item
+        const itemTotalAfterDiscount = Math.max(item.totalPrice - discountPerItem, 0);
+
+        await salesOps.addSale({
           project_id: item.printJobId,
           customer_id: formData.customerId ? parseInt(formData.customerId) : null,
           print_job_id: item.printJobId,
           invoice_number: invoiceNumber,
-          sale_date: now.toISOString(),
+          sale_date: new Date().toISOString(),
           quantity: item.quantity,
           unit_price: item.unitPrice,
-          total_price: item.totalPrice,
+          total_price: itemTotalAfterDiscount,
           payment_status: formData.paymentStatus,
-          payment_due_date: dueDate.toISOString(),
+          payment_due_date: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           notes: formData.notes,
           project_name: item.projectName,
           customer_name: customers.find(c => c.id.toString() === formData.customerId)?.name || null,
@@ -323,26 +363,36 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
           processing_cost: item.costs.postProcessingCost,
           extra_costs: item.costs.extraCosts,
           currency: settings.currency,
-          shipping_cost: shippingCost
+          shipping_cost: shippingCost,
+          coupon_code: appliedCoupon?.code,
+          coupon_amount: appliedCoupon?.amount
         });
       }
 
-      // Generer kupon efter salget er oprettet
-      if (generateCoupon && couponAmount > 0 && formData.customerId) {
+      // Hvis vi bruger en kupon, marker den som brugt
+      if (appliedCoupon) {
         const couponOps = new CouponOperations(db);
-        const couponCode = await couponOps.createCoupon({
+        await couponOps.markCouponAsUsed(appliedCoupon.code);
+      }
+
+      let generatedCouponCode = null;
+      let generatedCouponAmount = null;
+
+      // KUN generer ny kupon hvis checkboxen er markeret
+      if (generateCoupon && formData.customerId) {
+        const couponOps = new CouponOperations(db);
+        generatedCouponCode = await couponOps.createCoupon({
           customer_id: parseInt(formData.customerId),
           amount: couponAmount,
           currency: settings.currency
         });
+        generatedCouponAmount = couponAmount;
         
-        // Opdater salget med kuponkoden
-        if (createdSaleId) {
-          await salesOps.updateSaleByInvoice(invoiceNumber, {
-            coupon_code: couponCode,
-            coupon_amount: couponAmount
-          });
-        }
+        // Opdater alle salg med samme fakturanummer med den genererede kupon
+        await salesOps.updateSaleByInvoice(invoiceNumber, {
+          generated_coupon_code: generatedCouponCode,
+          generated_coupon_amount: generatedCouponAmount
+        });
       }
 
       toast({
@@ -417,10 +467,64 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
     };
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim() || !formData.customerId) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a coupon code and select a customer',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      const db = await initializeDatabase();
+      const couponOps = new CouponOperations(db);
+      
+      const result = await couponOps.applyCoupon(
+        couponCode.trim(),
+        parseInt(formData.customerId)
+      );
+
+      if (result.success) {
+        setAppliedCoupon({
+          code: couponCode,
+          amount: result.amount!
+        });
+        toast({
+          title: 'Success',
+          description: `Coupon applied: ${currency} ${result.amount!.toFixed(2)}`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error,
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to apply coupon:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to apply coupon',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="6xl">
       <ModalOverlay />
-      <ModalContent>
+      <ModalContent maxW="800px" minH="80vh">
         <ModalHeader>New Sale</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
@@ -518,6 +622,39 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
               Add Print Item
             </Button>
 
+            {/* Tilføj kupon sektion */}
+            <Box mt={4} p={4} borderWidth={1} borderRadius="md">
+              <Heading size="sm" mb={3}>Apply Coupon</Heading>
+              <Flex gap={2}>
+                <Input
+                  placeholder="Enter coupon code"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  isDisabled={!!appliedCoupon}
+                />
+                <Button
+                  onClick={handleApplyCoupon}
+                  isDisabled={!!appliedCoupon}
+                >
+                  Apply
+                </Button>
+                {appliedCoupon && (
+                  <Button
+                    variant="ghost"
+                    colorScheme="red"
+                    onClick={() => setAppliedCoupon(null)}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </Flex>
+              {appliedCoupon && (
+                <Text mt={2} color="green.500">
+                  Coupon applied: {currency} {appliedCoupon.amount.toFixed(2)}
+                </Text>
+              )}
+            </Box>
+
             {/* Rest of the form */}
           </VStack>
         </ModalBody>
@@ -583,7 +720,14 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
             </Flex>
           </Box>
 
-          <Button colorScheme="blue" onClick={handleSubmit}>
+          <Button
+            colorScheme="blue"
+            onClick={handleSubmit}
+            size="lg"
+            px={8}
+            height="48px"
+            fontSize="md"
+          >
             Create Sale
           </Button>
         </ModalFooter>
@@ -1121,8 +1265,8 @@ const Sales: React.FC = () => {
       subtotal: sale.items_total,
       total: sale.total_price,
       currency: settings.currency,
-      couponCode: firstSale?.coupon_code,  // Tilføj kuponkode
-      couponAmount: firstSale?.coupon_amount  // Tilføj kuponbeløb
+      couponCode: firstSale?.generated_coupon_code,  // Ændret fra coupon_code til generated_coupon_code
+      couponAmount: firstSale?.generated_coupon_amount  // Ændret fra coupon_amount til generated_coupon_amount
     };
   };
 
