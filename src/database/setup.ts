@@ -80,7 +80,7 @@ const initializeDatabase = async (): Promise<Database> => {
     id         INTEGER  PRIMARY KEY AUTOINCREMENT,
     name       TEXT     NOT NULL
                         UNIQUE,
-    s_resin   BOOLEAN  NOT NULL
+    is_resin   BOOLEAN  NOT NULL
                         DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -93,7 +93,7 @@ const initializeDatabase = async (): Promise<Database> => {
     phone          TEXT,
     address        TEXT,
     vat_id         TEXT,
-    reated_at     DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at     DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
     CREATE TABLE IF NOT EXISTS filaments (
