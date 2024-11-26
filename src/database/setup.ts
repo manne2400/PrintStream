@@ -52,6 +52,18 @@ const initializeDatabase = async (): Promise<Database> => {
     })
   }
 
+  // Opret printer_config tabel hvis den ikke findes
+  await exec(`
+    CREATE TABLE IF NOT EXISTS printer_config (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ip_address TEXT NOT NULL,
+      access_code TEXT NOT NULL,
+      serial TEXT NOT NULL,
+      name TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
   // Først, tjek om kolonnerne eksisterer
   const tableInfo = await all("PRAGMA table_info(sales)");
   const columns = tableInfo.map(col => col.name);

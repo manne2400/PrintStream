@@ -96,6 +96,7 @@ interface InvoiceData {
   }[];
   shipping: number;
   subtotal: number;
+  appliedDiscount: number;
   total: number;
   currency: string;
   couponCode?: string;
@@ -417,16 +418,20 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
     }
   };
 
-  const getInvoiceData = async (sale: any): Promise<InvoiceData> => {
+  const getInvoiceData = async (sale: GroupedSale): Promise<InvoiceData> => {
     const db = await initializeDatabase();
     const settingsOps = new SettingsOperations(db);
     const customerOps = new CustomerOperations(db);
+    const salesOps = new SalesOperations(db);
     
     const settings = await settingsOps.getSettings();
     let customerInfo = null;
     
-    if (sale.customer_id) {
-      const customer = await customerOps.getCustomerById(sale.customer_id);
+    // Hent det første salg for at få kupon information
+    const firstSale = await salesOps.getSaleById(sale.id);
+    
+    if (sale.customer_name) {
+      const customer = await customerOps.getCustomerByName(sale.customer_name);
       if (customer) {
         customerInfo = {
           name: customer.name,
@@ -441,7 +446,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
     return {
       invoiceNumber: sale.invoice_number,
       date: new Date(sale.sale_date).toLocaleDateString(),
-      dueDate: new Date(sale.payment_due_date).toLocaleDateString(),
+      dueDate: new Date(new Date(sale.sale_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
       customerInfo,
       companyInfo: {
         name: settings.company_name,
@@ -452,18 +457,19 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
         bankDetails: settings.bank_details,
         logo: settings.invoice_logo_path
       },
-      items: [{
-        description: sale.project_name,
-        quantity: sale.quantity,
-        unitPrice: sale.unit_price,
-        total: sale.total_price
-      }],
-      shipping: sale.shipping_cost || 0,
-      subtotal: sale.total_price,
-      total: sale.total_price + (sale.shipping_cost || 0),
+      items: sale.items.map(item => ({
+        description: item.project_name,
+        quantity: item.quantity,
+        unitPrice: item.total_price / item.quantity,
+        total: item.total_price
+      })),
+      shipping: sale.shipping_cost,
+      subtotal: sale.items_total,
+      appliedDiscount: firstSale?.coupon_amount || 0,  // Tilføjet anvendt rabat
+      total: sale.total_price,
       currency: settings.currency,
-      couponCode: sale.coupon_code,
-      couponAmount: sale.coupon_amount
+      couponCode: firstSale?.generated_coupon_code,  // Kupon til næste køb
+      couponAmount: firstSale?.generated_coupon_amount  // Beløb til næste køb
     };
   };
 
@@ -1263,10 +1269,11 @@ const Sales: React.FC = () => {
       })),
       shipping: sale.shipping_cost,
       subtotal: sale.items_total,
+      appliedDiscount: firstSale?.coupon_amount || 0,  // Tilføjet anvendt rabat
       total: sale.total_price,
       currency: settings.currency,
-      couponCode: firstSale?.generated_coupon_code,  // Ændret fra coupon_code til generated_coupon_code
-      couponAmount: firstSale?.generated_coupon_amount  // Ændret fra coupon_amount til generated_coupon_amount
+      couponCode: firstSale?.generated_coupon_code,  // Kupon til næste køb
+      couponAmount: firstSale?.generated_coupon_amount  // Beløb til næste køb
     };
   };
 
