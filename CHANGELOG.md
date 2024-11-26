@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.3.2] - 2024-11-24
+### Added
+- Printer monitoring system
+  - Real-time printer status tracking
+  - Temperature monitoring for bed and nozzle
+  - Print progress tracking with estimated time remaining
+  - Remote printer control capabilities
+  - Print failure detection and alerts
+- Coupon and discount system
+  - Customizable coupon code generation
+  - Percentage and fixed amount discounts
+  - Time-limited coupon validity
+  - Usage tracking and statistics
+  - Multiple coupon support per order
+  - Automatic discount calculation
+- Enhanced notification system
+  - Print completion notifications
+  - Error alerts for printer issues
+  - Low filament warnings
+  - Temperature threshold alerts
+
+### Changed
+- Updated order processing to handle coupon discounts
+- Improved invoice template to show applied discounts
+- Enhanced dashboard with printer status overview
+- Modified pricing calculations to include discount logic
+
+### Fixed
+- Fixed discount calculation for multiple items
+- Fixed printer connection stability issues
+- Fixed notification delivery delays
+- Corrected discount display on invoices
+
+### Technical
+- Added new database tables for coupon management
+- Implemented WebSocket connection for printer monitoring
+- Enhanced security for remote printer access
+- Added logging for printer events and discount usage
+
 ## [0.3.1] - 2024-11-17
 ### Added
 - Invoice logo functionality
