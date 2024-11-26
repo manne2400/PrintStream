@@ -4,6 +4,7 @@ const path = require('path');
 const isDev = require('electron-is-dev');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const log = require('electron-log');
 
 let printerProcess = null;
 
@@ -139,7 +140,10 @@ ipcMain.handle('restore-database', async (event, backupPath) => {
   }
 });
 
-// Tilføj denne funktion
+// Sæt log fil placering
+log.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs/main.log');
+
+// Opdater setupPythonMonitor med file logging
 async function setupPythonMonitor(printerConfig) {
   if (printerProcess) {
     printerProcess.kill();
@@ -151,9 +155,18 @@ async function setupPythonMonitor(printerConfig) {
     ? path.join(app.getAppPath(), 'py_tools', 'Printer_info.py')
     : path.join(process.resourcesPath, 'py_tools', 'Printer_info.py');
 
-  const workingDir = isDev 
-    ? app.getAppPath()
-    : path.join(process.resourcesPath, '..');
+  // Log vigtig information
+  log.info('Starting Python monitor with:');
+  log.info('App path:', app.getAppPath());
+  log.info('Resources path:', process.resourcesPath);
+  log.info('Script path:', scriptPath);
+  log.info('Script exists:', fs.existsSync(scriptPath));
+  log.info('UserData path:', app.getPath('userData'));
+
+  const env = {
+    ...process.env,
+    PRINTSTREAM_DATA_PATH: app.getPath('userData')
+  };
   
   printerProcess = spawn(pythonPath, [
     scriptPath,
@@ -162,21 +175,26 @@ async function setupPythonMonitor(printerConfig) {
     '--serial', printerConfig.serial
   ], {
     stdio: 'pipe',
-    cwd: workingDir
+    cwd: isDev ? app.getAppPath() : process.resourcesPath,
+    env: env
   });
 
-  // Kun log kritiske fejl
+  log.info('Python process PID:', printerProcess.pid);
+
   printerProcess.stderr.on('data', (data) => {
-    if (data.toString().includes('Error:')) {
-      console.error(`Python error: ${data}`);
-    }
+    log.error(`Python stderr: ${data}`);
   });
 
-  printerProcess.on('close', (code) => {
-    if (code !== 0 && code !== null) {
-      console.error(`Python process exited with code ${code}`);
-    }
-    printerProcess = null;
+  printerProcess.stdout.on('data', (data) => {
+    log.info(`Python stdout: ${data}`);
+  });
+
+  printerProcess.on('error', (error) => {
+    log.error('Failed to start Python process:', error);
+  });
+
+  printerProcess.on('exit', (code, signal) => {
+    log.info(`Python process exited with code ${code} and signal ${signal}`);
   });
 
   return printerProcess;

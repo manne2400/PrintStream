@@ -29,9 +29,9 @@
     "@types/pdfkit": "^0.13.5",
     "chart.js": "^4.4.0",
     "electron-is-dev": "^2.0.0",
+    "electron-log": "^5.2.3",
     "framer-motion": "^10.18.0",
     "pdfkit": "^0.15.1",
-    "printstream": "file:",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
@@ -81,37 +81,20 @@
     "files": [
       "build/**/*",
       "node_modules/**/*",
-      "py_tools/**/*",
-      "LICENSE.md"
+      "py_tools/**/*"
     ],
     "extraResources": [
       {
-        "from": "py_tools/python",
-        "to": "py_tools/python",
+        "from": "py_tools",
+        "to": "py_tools",
         "filter": [
           "**/*"
         ]
       }
     ],
+    "asar": true,
     "asarUnpack": [
       "py_tools/**/*"
-    ],
-    "directories": {
-      "buildResources": "assets",
-      "output": "dist"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "license": "LICENSE.md",
-      "installerIcon": "src/assets/icon.ico",
-      "uninstallerIcon": "src/assets/icon.ico",
-      "installerHeaderIcon": "src/assets/icon.ico",
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "PrintStream",
-      "perMachine": false,
-      "runAfterFinish": true
-    }
+    ]
   }
 }

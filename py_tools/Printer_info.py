@@ -23,9 +23,9 @@ class PrinterMonitor:
             'ams_humidity': printer_status_dict.get('ams', {}).get('ams', [{}])[0].get('humidity', 'N/A')
         }
         
-        # Gem til JSON fil i AppData mappen
-        appdata_path = os.getenv('APPDATA')
-        status_file_path = os.path.join(appdata_path, 'PrintStream', 'printer_status.json')
+        # Brug miljøvariablen hvis den findes, ellers brug APPDATA
+        data_path = os.getenv('PRINTSTREAM_DATA_PATH') or os.path.join(os.getenv('APPDATA'), 'PrintStream')
+        status_file_path = os.path.join(data_path, 'printer_status.json')
         
         # Sørg for at mappen eksisterer
         os.makedirs(os.path.dirname(status_file_path), exist_ok=True)

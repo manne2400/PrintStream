@@ -214,7 +214,7 @@ const initializeDatabase = async (): Promise<Database> => {
       )
       REFERENCES print_jobs (id) 
     );
-
+    
     CREATE TABLE IF NOT EXISTS settings (
       id                   INTEGER PRIMARY KEY AUTOINCREMENT,
       printer_hourly_rate  REAL    DEFAULT 0,
@@ -272,6 +272,36 @@ const initializeDatabase = async (): Promise<Database> => {
     expiryDate.toISOString(),
     Math.random().toString(36).substring(7)
   ]);
+
+  // Tjek først om kolonnerne eksisterer
+  const columns = await all(`
+    PRAGMA table_info(sales)
+  `);
+
+  const columnNames = columns.map(col => col.name);
+  const missingColumns = [];
+
+  if (!columnNames.includes('coupon_code')) {
+    missingColumns.push('coupon_code TEXT');
+  }
+  if (!columnNames.includes('coupon_amount')) {
+    missingColumns.push('coupon_amount REAL');
+  }
+  if (!columnNames.includes('generated_coupon_code')) {
+    missingColumns.push('generated_coupon_code TEXT');
+  }
+  if (!columnNames.includes('generated_coupon_amount')) {
+    missingColumns.push('generated_coupon_amount REAL');
+  }
+
+  // Tilføj manglende kolonner én ad gangen
+  for (const column of missingColumns) {
+    try {
+      await run(`ALTER TABLE sales ADD COLUMN ${column}`);
+    } catch (error) {
+      console.error(`Fejl ved tilføjelse af kolonne ${column}:`, error);
+    }
+  }
 
   return { run, get, all, exec }
 }
