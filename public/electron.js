@@ -213,8 +213,7 @@ app.on('before-quit', () => {
 // Opdater read-status-file handler
 ipcMain.handle('read-status-file', async (event, filePath) => {
   try {
-    const fullPath = path.join(app.getAppPath(), filePath);
-    const rawData = fs.readFileSync(fullPath, 'utf8');
+    const rawData = fs.readFileSync(filePath, 'utf8');
     const data = JSON.parse(rawData);
     
     return JSON.stringify({

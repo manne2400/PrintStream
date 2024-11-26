@@ -94,7 +94,9 @@ const PrinterStatus: React.FC = () => {
 
   const readStatusFile = async () => {
     try {
-      const data = await ipcRenderer.invoke('read-status-file', 'printer_status.json');
+      const userDataPath = await ipcRenderer.invoke('get-user-data-path');
+      const statusFilePath = path.join(userDataPath, 'printer_status.json');
+      const data = await ipcRenderer.invoke('read-status-file', statusFilePath);
       if (data) {
         setStatus(JSON.parse(data));
       }

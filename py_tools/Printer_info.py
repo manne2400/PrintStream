@@ -3,6 +3,7 @@ from bambu_connect import BambuClient, PrinterStatus
 from bambu_connect import AMSEntry
 from dataclasses import asdict
 import json
+import os
 
 class PrinterMonitor:
     def __init__(self, hostname, access_code, serial):
@@ -22,8 +23,15 @@ class PrinterMonitor:
             'ams_humidity': printer_status_dict.get('ams', {}).get('ams', [{}])[0].get('humidity', 'N/A')
         }
         
-        # Gem til JSON fil
-        with open('printer_status.json', 'w', encoding='utf-8') as f:
+        # Gem til JSON fil i AppData mappen
+        appdata_path = os.getenv('APPDATA')
+        status_file_path = os.path.join(appdata_path, 'PrintStream', 'printer_status.json')
+        
+        # Sørg for at mappen eksisterer
+        os.makedirs(os.path.dirname(status_file_path), exist_ok=True)
+        
+        # Gem filen
+        with open(status_file_path, 'w', encoding='utf-8') as f:
             json.dump(status_data, f, indent=2)
 
     def start_monitoring(self):
