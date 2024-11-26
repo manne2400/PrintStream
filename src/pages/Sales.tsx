@@ -986,6 +986,9 @@ const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({ isOpen, onClose, 
 
             <div class="totals">
               <div>Subtotal: ${invoiceData.currency} ${invoiceData.subtotal.toFixed(2)}</div>
+              ${invoiceData.appliedDiscount > 0 ? `
+                <div style="color: #E53E3E;">Discount Applied: -${invoiceData.currency} ${invoiceData.appliedDiscount.toFixed(2)}</div>
+              ` : ''}
               <div>Shipping: ${invoiceData.currency} ${invoiceData.shipping.toFixed(2)}</div>
               <div class="total-amount">Total: ${invoiceData.currency} ${invoiceData.total.toFixed(2)}</div>
             </div>
