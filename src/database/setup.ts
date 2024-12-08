@@ -237,6 +237,29 @@ const initializeDatabase = async (): Promise<Database> => {
     );
   `);
 
+  // Tilføj license tabel
+  await exec(`
+    CREATE TABLE IF NOT EXISTS license (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      installation_date TEXT NOT NULL,
+      expiry_date TEXT NOT NULL,
+      license_key TEXT
+    );
+  `);
+
+  // Indsæt installations dato hvis tabellen er tom
+  const licenseCount = await get('SELECT COUNT(*) as count FROM license');
+  if (licenseCount.count === 0) {
+    await exec(`
+      INSERT INTO license (installation_date, expiry_date, license_key) 
+      VALUES (
+        datetime('now'),
+        datetime('now', '+30 days'),
+        NULL
+      );
+    `);
+  }
+
   return { run, get, all, exec }
 }
 

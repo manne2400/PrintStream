@@ -1,11 +1,12 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ChakraProvider, useToast } from '@chakra-ui/react';
+import { ChakraProvider, useToast, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, Text, Link, Input, FormControl, FormLabel, Button, VStack } from '@chakra-ui/react';
 import Layout from './components/Layout';
 import { NotificationProvider, useNotifications } from './context/NotificationContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import initializeDatabase from './database/setup';
 import { FilamentOperations } from './database/operations';
+import { LicenseOperations } from './database/operations';
 
 // Page imports
 import Dashboard from './pages/Dashboard';
@@ -22,6 +23,9 @@ const AppContent: React.FC = () => {
   const toast = useToast();
   const { addNotification, removeNotification } = useNotifications();
   const [checkedFilaments, setCheckedFilaments] = React.useState(new Set<number>());
+  const [isLicenseValid, setIsLicenseValid] = useState(true);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const [newLicenseKey, setNewLicenseKey] = useState('');
 
   const checkLowStock = useCallback(async () => {
     try {
@@ -79,6 +83,95 @@ const AppContent: React.FC = () => {
     // Cleanup når komponenten unmountes
     return () => clearInterval(interval);
   }, [checkLowStock]);
+
+  useEffect(() => {
+    checkLicense();
+  }, []);
+
+  const checkLicense = async () => {
+    const db = await initializeDatabase();
+    const licenseOps = new LicenseOperations(db);
+    const status = await licenseOps.checkLicense();
+    
+    if (!status.isValid) {
+      setIsLicenseValid(false);
+      setShowLicenseModal(true);
+    }
+  };
+
+  const handleLicenseSubmit = async () => {
+    try {
+      const db = await initializeDatabase();
+      const licenseOps = new LicenseOperations(db);
+      const success = await licenseOps.extendLicense(newLicenseKey);
+      
+      if (success) {
+        toast({
+          title: 'Success',
+          description: 'License key applied successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        setIsLicenseValid(true);
+        setShowLicenseModal(false);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Invalid license key',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to apply license:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to apply license key',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  if (!isLicenseValid) {
+    return (
+      <Modal isOpen={showLicenseModal} onClose={() => {}} closeOnOverlayClick={false}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>License Expired</ModalHeader>
+          <ModalBody>
+            <VStack spacing={4}>
+              <Text>
+                Your trial period has expired. Please download the latest version from Discord or enter a license key to continue.
+              </Text>
+              <Link href="https://discord.gg/utXE9ER5yK" isExternal color="blue.500">
+                Join Discord Community
+              </Link>
+              <FormControl>
+                <FormLabel>License Key</FormLabel>
+                <Input
+                  value={newLicenseKey}
+                  onChange={(e) => setNewLicenseKey(e.target.value)}
+                  placeholder="Enter your license key"
+                />
+              </FormControl>
+              <Button
+                colorScheme="blue"
+                onClick={handleLicenseSubmit}
+                isDisabled={!newLicenseKey}
+                width="100%"
+              >
+                Apply License Key
+              </Button>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
 
   return (
     <Layout>

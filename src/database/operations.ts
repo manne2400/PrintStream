@@ -1,4 +1,5 @@
 import { Database } from './setup'
+import { validateLicenseKey } from '../utils/license';
 
 export interface Filament {
   id?: number
@@ -481,5 +482,45 @@ export class SalesOperations {
       'UPDATE sales SET payment_status = ? WHERE id = ?',
       [status, id]
     );
+  }
+}
+
+export class LicenseOperations {
+  private db: Database;
+
+  constructor(db: Database) {
+    this.db = db;
+  }
+
+  async checkLicense(): Promise<{
+    isValid: boolean;
+    daysLeft: number;
+    expiryDate: string;
+  }> {
+    const license = await this.db.get('SELECT * FROM license LIMIT 1');
+    const now = new Date();
+    const expiry = new Date(license.expiry_date);
+    const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return {
+      isValid: daysLeft > 0,
+      daysLeft: Math.max(0, daysLeft),
+      expiryDate: license.expiry_date
+    };
+  }
+
+  async extendLicense(licenseKey: string): Promise<boolean> {
+    const validation = validateLicenseKey(licenseKey);
+    if (!validation.isValid || !validation.days) return false;
+    
+    // Forlæng med det antal dage der er kodet i nøglen
+    await this.db.run(`
+      UPDATE license 
+      SET expiry_date = datetime('now', '+${validation.days} days'),
+          license_key = ?
+      WHERE id = 1
+    `, [licenseKey]);
+    
+    return true;
   }
 } 

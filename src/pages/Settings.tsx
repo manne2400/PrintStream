@@ -6,7 +6,7 @@ import {
   Select, Button, useToast, Divider, Textarea
 } from '@chakra-ui/react';
 import initializeDatabase from '../database/setup';
-import { SettingsOperations, Settings as SettingsType } from '../database/operations';
+import { SettingsOperations, Settings as SettingsType, LicenseOperations } from '../database/operations';
 import { useCurrency } from '../context/CurrencyContext';
 
 const Settings: React.FC = () => {
@@ -24,8 +24,24 @@ const Settings: React.FC = () => {
   });
   const { updateCurrency } = useCurrency();
 
+  const [licenseInfo, setLicenseInfo] = useState<{
+    daysLeft: number;
+    expiryDate: string;
+    licenseKey: string | null;
+  }>({
+    daysLeft: 0,
+    expiryDate: '',
+    licenseKey: null
+  });
+
+  const [newLicenseKey, setNewLicenseKey] = useState('');
+
   useEffect(() => {
     loadSettings();
+  }, []);
+
+  useEffect(() => {
+    loadLicenseInfo();
   }, []);
 
   const loadSettings = async () => {
@@ -56,6 +72,17 @@ const Settings: React.FC = () => {
     }
   };
 
+  const loadLicenseInfo = async () => {
+    try {
+      const db = await initializeDatabase();
+      const ops = new LicenseOperations(db);
+      const status = await ops.checkLicense();
+      setLicenseInfo(status);
+    } catch (err) {
+      console.error('Failed to load license info:', err);
+    }
+  };
+
   const handleSave = async () => {
     try {
       const db = await initializeDatabase();
@@ -83,6 +110,43 @@ const Settings: React.FC = () => {
   const handleCurrencyChange = async (newCurrency: string) => {
     setSettings(prev => ({ ...prev, currency: newCurrency }));
     await updateCurrency(newCurrency);
+  };
+
+  const handleLicenseSubmit = async () => {
+    try {
+      const db = await initializeDatabase();
+      const ops = new LicenseOperations(db);
+      const success = await ops.extendLicense(newLicenseKey);
+      
+      if (success) {
+        toast({
+          title: 'Success',
+          description: 'License key applied successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        loadLicenseInfo();
+        setNewLicenseKey('');
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Invalid license key',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to apply license:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to apply license key',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    }
   };
 
   // Tilføj valuta konstant
@@ -239,6 +303,29 @@ const Settings: React.FC = () => {
                 onChange={(e) => setSettings(prev => ({ ...prev, vat_id: e.target.value }))}
               />
             </FormControl>
+          </VStack>
+        </Box>
+
+        <Box bg="white" p={6} rounded="lg" shadow="sm" mb={6}>
+          <Heading size="md" mb={4}>License Information</Heading>
+          <VStack align="stretch" spacing={4}>
+            <Text>Days Remaining: {licenseInfo.daysLeft}</Text>
+            <Text>Expiry Date: {new Date(licenseInfo.expiryDate).toLocaleDateString()}</Text>
+            <FormControl>
+              <FormLabel>Enter License Key</FormLabel>
+              <Input
+                value={newLicenseKey}
+                onChange={(e) => setNewLicenseKey(e.target.value)}
+                placeholder="Enter your license key"
+              />
+            </FormControl>
+            <Button
+              colorScheme="blue"
+              onClick={handleLicenseSubmit}
+              isDisabled={!newLicenseKey}
+            >
+              Apply License Key
+            </Button>
           </VStack>
         </Box>
 
