@@ -21,6 +21,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.10.3",
     "@electron/remote": "^2.1.2",
     "@emotion/react": "^11.13.3",
@@ -32,6 +33,7 @@
     "electron-log": "^5.2.3",
     "framer-motion": "^10.18.0",
     "pdfkit": "^0.15.1",
+    "printstream": "file:",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",

@@ -17,7 +17,7 @@ import { PrintJobSelect } from '../components/sales/PrintJobSelect';
 import { TotalCalculation } from '../components/sales/TotalCalculation';
 
 interface SortConfig {
-  key: string;
+  key: keyof GroupedSale;
   direction: 'asc' | 'desc';
 }
 
@@ -1062,7 +1062,10 @@ const PrintInvoiceModal: React.FC<PrintInvoiceModalProps> = ({ isOpen, onClose, 
 const Sales: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'date', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: 'sale_date',
+    direction: 'desc'
+  });
   const [sales, setSales] = useState<any[]>([]);
   const toast = useToast();
   const { currency } = useCurrency();
@@ -1092,14 +1095,14 @@ const Sales: React.FC = () => {
     }
   };
 
-  const handleSort = (key: string) => {
+  const handleSort = (key: keyof GroupedSale) => {
     setSortConfig(current => ({
       key,
       direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
     }));
   };
 
-  const renderSortIcon = (columnKey: string) => {
+  const renderSortIcon = (columnKey: keyof GroupedSale) => {
     if (sortConfig.key !== columnKey) {
       return null;
     }
@@ -1159,6 +1162,28 @@ const Sales: React.FC = () => {
 
     return Array.from(groups.values());
   }, [filteredSales]);
+
+  const sortedSales = useMemo(() => {
+    return [...groupedSales].sort((a, b) => {
+      // Håndter null værdier for customer_name
+      if (sortConfig.key === 'customer_name') {
+        const aName = a.customer_name || '';  // Konverter null til tom streng
+        const bName = b.customer_name || '';  // Konverter null til tom streng
+        return sortConfig.direction === 'asc' 
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
+      }
+
+      // Håndter andre kolonner som før
+      if (a[sortConfig.key] < b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? -1 : 1;
+      }
+      if (a[sortConfig.key] > b[sortConfig.key]) {
+        return sortConfig.direction === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [groupedSales, sortConfig]);
 
   const handleUpdatePaymentStatus = async (id: number, status: 'pending' | 'paid' | 'cancelled') => {
     try {
@@ -1281,8 +1306,8 @@ const Sales: React.FC = () => {
   };
 
   return (
-    <Box p={4}>
-      <Box variant="stats-card">
+    <Box p={4} width="100%">
+      <Box variant="stats-card" width="100%">
         <Flex justify="space-between" align="center" mb={6}>
           <Box>
             <Heading size="lg" fontWeight="semibold" color="gray.800">
@@ -1314,20 +1339,53 @@ const Sales: React.FC = () => {
           </InputGroup>
         </Box>
 
-        <Table variant="simple">
+        <Table variant="simple" width="100%">
           <Thead>
             <Tr>
-              <Th>Invoice #</Th>
-              <Th>Date</Th>
-              <Th>Customer</Th>
-              <Th>Projects</Th>
-              <Th isNumeric>Shipping</Th>
-              <Th isNumeric>Total</Th>
-              <Th>Status</Th>
+              <Th width="15%" cursor="pointer" onClick={() => handleSort('invoice_number')}>
+                <Flex align="center">
+                  INVOICE #
+                  {renderSortIcon('invoice_number')}
+                </Flex>
+              </Th>
+              <Th width="12%" cursor="pointer" onClick={() => handleSort('sale_date')}>
+                <Flex align="center">
+                  DATE
+                  {renderSortIcon('sale_date')}
+                </Flex>
+              </Th>
+              <Th width="20%" cursor="pointer" onClick={() => handleSort('customer_name')}>
+                <Flex align="center">
+                  CUSTOMER
+                  {renderSortIcon('customer_name')}
+                </Flex>
+              </Th>
+              <Th width="23%">
+                <Flex align="center">
+                  PROJECTS
+                </Flex>
+              </Th>
+              <Th width="12%" isNumeric cursor="pointer" onClick={() => handleSort('total_price')}>
+                <Flex align="center" justify="flex-end">
+                  TOTAL
+                  {renderSortIcon('total_price')}
+                </Flex>
+              </Th>
+              <Th width="10%" cursor="pointer" onClick={() => handleSort('payment_status')}>
+                <Flex align="center">
+                  STATUS
+                  {renderSortIcon('payment_status')}
+                </Flex>
+              </Th>
+              <Th width="15%">
+                <Flex align="center" justify="center">
+                  ACTIONS
+                </Flex>
+              </Th>
             </Tr>
           </Thead>
           <Tbody>
-            {groupedSales.map((sale) => (
+            {sortedSales.map((sale) => (
               <Tr key={sale.invoice_number}>
                 <Td>{sale.invoice_number}</Td>
                 <Td>{new Date(sale.sale_date).toLocaleDateString()}</Td>
@@ -1337,23 +1395,24 @@ const Sales: React.FC = () => {
                     `${item.project_name} (${item.quantity}x)`
                   ).join(', ')}
                 </Td>
-                <Td isNumeric>{currency} {sale.shipping_cost.toFixed(2)}</Td>
                 <Td isNumeric>{currency} {sale.total_price.toFixed(2)}</Td>
                 <Td>
-                  <Flex gap={2}>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      leftIcon={<Icon as={CreditCardIcon} />}
-                      colorScheme={
-                        sale.payment_status === 'paid' ? 'green' :
-                        sale.payment_status === 'pending' ? 'yellow' :
-                        'red'
-                      }
-                      onClick={() => setSelectedSale(sale as any)}
-                    >
-                      {sale.payment_status.toUpperCase()}
-                    </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    leftIcon={<Icon as={CreditCardIcon} />}
+                    colorScheme={
+                      sale.payment_status === 'paid' ? 'green' :
+                      sale.payment_status === 'pending' ? 'yellow' :
+                      'red'
+                    }
+                    onClick={() => setSelectedSale(sale as any)}
+                  >
+                    {sale.payment_status.toUpperCase()}
+                  </Button>
+                </Td>
+                <Td>
+                  <Flex justify="center" gap={2}>
                     <IconButton
                       aria-label="Print invoice"
                       icon={<Icon as={PrinterIcon} />}
