@@ -324,28 +324,29 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
 
   const handleSubmit = async () => {
     try {
+      console.log('=== Starting Sale Creation ===');
+      console.log('Form Data:', formData);
+      console.log('Selected Customer:', customers.find(c => c.id.toString() === formData.customerId));
+      
       const db = await initializeDatabase();
       const salesOps = new SalesOperations(db);
       const printJobOps = new PrintJobOperations(db);
       const settingsOps = new SettingsOperations(db);
       const settings = await settingsOps.getSettings();
       const invoiceNumber = await salesOps.getNextInvoiceNumber();
+
+      console.log('Generated Invoice Number:', invoiceNumber);
       
       // Beregn rabat per item hvis der er anvendt en kupon
       const discountPerItem = appliedCoupon 
         ? (appliedCoupon.amount / formData.items.length) 
         : 0;
 
+      console.log('Discount per item:', discountPerItem);
+      
       // Opret et salg for hvert item
       for (const item of formData.items) {
-        await printJobOps.updatePrintJob(item.printJobId, {
-          quantity: (await printJobOps.getPrintJobById(item.printJobId)).quantity - item.quantity
-        });
-
-        // Beregn den reducerede pris for dette item
-        const itemTotalAfterDiscount = Math.max(item.totalPrice - discountPerItem, 0);
-
-        await salesOps.addSale({
+        const saleData = {
           project_id: item.printJobId,
           customer_id: formData.customerId ? parseInt(formData.customerId) : null,
           print_job_id: item.printJobId,
@@ -353,7 +354,7 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
           sale_date: new Date().toISOString(),
           quantity: item.quantity,
           unit_price: item.unitPrice,
-          total_price: itemTotalAfterDiscount,
+          total_price: Math.max(item.totalPrice - discountPerItem, 0),
           payment_status: formData.paymentStatus,
           payment_due_date: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           notes: formData.notes,
@@ -367,7 +368,12 @@ const NewSaleModal: React.FC<NewSaleModalProps> = ({ isOpen, onClose, onSaleComp
           shipping_cost: shippingCost,
           coupon_code: appliedCoupon?.code,
           coupon_amount: appliedCoupon?.amount
-        });
+        };
+
+        console.log('Adding sale with data:', saleData);
+        
+        await salesOps.addSale(saleData);
+        console.log('Sale added successfully');
       }
 
       // Hvis vi bruger en kupon, marker den som brugt

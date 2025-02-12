@@ -1,0 +1,34 @@
+PrintStream Software License Agreement
+
+1. License Grant
+This software is licensed, not sold. Jacob Manscher grants you a non-transferable, non-exclusive license to use PrintStream software.
+
+2. Restrictions
+You may not:
+- Modify, reverse engineer, decompile, or disassemble the software
+- Remove any copyright or other proprietary notices
+- Transfer the software to any third party
+- Use the software for any illegal purposes
+
+3. Updates and Support
+- Software updates may be provided at the discretion of Jacob Manscher
+- Technical support is provided through official Discord channel only
+
+4. Term and Termination
+- This license is effective until terminated
+- Your rights under this license will terminate automatically without notice if you fail to comply with any terms
+
+5. Disclaimer of Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+6. Limitation of Liability
+IN NO EVENT SHALL JACOB MANSCHER BE LIABLE FOR ANY DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE THE SOFTWARE.
+
+7. General
+- This Agreement constitutes the entire agreement between you and Jacob Manscher
+- This Agreement is governed by Danish law
+
+By installing this software, you agree to be bound by the terms of this license agreement.
+
+Copyright © 2024 Jacob Manscher
+All rights reserved. 
