@@ -1,6 +1,13 @@
 # Changelog
 
-## [0.3.2] - 2024-11-24
+## [0.3.5] - 2024-02-12
+### Removed
+- Removed printer monitoring system
+  - Removed PrinterStatus page
+  - Removed Python monitoring script
+  - Cleaned up related configurations
+
+## [0.3.4] - 2024-02-12
 ### Added
 - Printer monitoring system
   - Real-time printer status tracking
@@ -72,8 +79,6 @@
 - Improved async operations for PDF creation
 - Enhanced error handling for file operations
 - Updated database schema for logo storage
-
-
 
 ## [0.2.9] - 2024-11-11
 

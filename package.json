@@ -1,7 +1,7 @@
 {
   "name": "printstream",
   "productName": "PrintStream",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "3D Print Management System",
   "main": "build/electron.js",
   "scripts": {
@@ -11,8 +11,7 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:linux": "electron-builder --linux",
-    "setup-python": "node scripts/setup-python.js",
-    "postinstall": "npm run setup-python"
+    "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [],
   "author": {
@@ -82,21 +81,8 @@
     },
     "files": [
       "build/**/*",
-      "node_modules/**/*",
-      "py_tools/**/*"
+      "node_modules/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "py_tools",
-        "to": "py_tools",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
-    "asar": true,
-    "asarUnpack": [
-      "py_tools/**/*"
-    ]
+    "asar": true
   }
 }

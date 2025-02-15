@@ -357,7 +357,7 @@ const About: React.FC = () => {
               @https://discord.gg/utXE9ER5yK
             </Text>
             <Text fontSize="sm">
-              Version 0.3.3 | © 2024 PrintStream. All rights reserved.
+              Version 0.3.4 | © 2024 PrintStream. All rights reserved.
             </Text>
           </Box>
         </VStack>
