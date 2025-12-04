@@ -252,7 +252,7 @@ const initializeDatabase = async (): Promise<Database> => {
   // Tilføj initial trial licens hvis der ikke findes nogen
   const currentDate = new Date();
   const expiryDate = new Date();
-  expiryDate.setDate(currentDate.getDate() + 30); // 30 dages prøveperiode
+  expiryDate.setDate(currentDate.getDate() + 3650); // 10 års gratis licens
 
   await run(`
     INSERT OR IGNORE INTO license (
