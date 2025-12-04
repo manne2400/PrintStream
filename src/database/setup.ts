@@ -249,29 +249,45 @@ const initializeDatabase = async (): Promise<Database> => {
     INSERT OR IGNORE INTO settings (id) VALUES (1);
   `);
 
-  // Tilføj initial trial licens hvis der ikke findes nogen
-  const currentDate = new Date();
-  const expiryDate = new Date();
-  expiryDate.setDate(currentDate.getDate() + 3650); // 10 års gratis licens
+  // Tjek om der allerede findes en licens
+  const existingLicense = await get('SELECT * FROM license WHERE id = 1');
+  
+  if (existingLicense && existingLicense.expiry_date) {
+    // Eksisterende bruger - tilføj 10 år til deres nuværende licens
+    const existingExpiry = new Date(existingLicense.expiry_date);
+    const newExpiry = new Date(existingExpiry);
+    newExpiry.setDate(existingExpiry.getDate() + 3650); // Tilføj 10 år (3650 dage)
+    
+    await run(`
+      UPDATE license 
+      SET expiry_date = ?
+      WHERE id = 1
+    `, [newExpiry.toISOString()]);
+  } else {
+    // Ny bruger - opret licens med 10 års gratis licens
+    const currentDate = new Date();
+    const expiryDate = new Date();
+    expiryDate.setDate(currentDate.getDate() + 3650); // 10 års gratis licens
 
-  await run(`
-    INSERT OR IGNORE INTO license (
-      id, 
-      installation_date, 
-      expiry_date, 
-      installation_id
-    ) 
-    VALUES (
-      1, 
-      ?, 
-      ?, 
-      ?
-    )
-  `, [
-    currentDate.toISOString(),
-    expiryDate.toISOString(),
-    Math.random().toString(36).substring(7)
-  ]);
+    await run(`
+      INSERT OR IGNORE INTO license (
+        id, 
+        installation_date, 
+        expiry_date, 
+        installation_id
+      ) 
+      VALUES (
+        1, 
+        ?, 
+        ?, 
+        ?
+      )
+    `, [
+      currentDate.toISOString(),
+      expiryDate.toISOString(),
+      Math.random().toString(36).substring(7)
+    ]);
+  }
 
   // Tjek først om kolonnerne eksisterer
   const columns = await all(`
